@@ -1,0 +1,12 @@
+*.class
+
+.mtj.tmp/
+*.war
+*.ear
+
+hs_err_pid*
+*~
+*.lock
+*.DS_Store
+*.swp
+*.out

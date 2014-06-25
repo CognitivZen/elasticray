@@ -1,0 +1,209 @@
+/**
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
+ *
+ * This library is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation; either version 2.1 of the License, or (at your option)
+ * any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
+ */
+
+package com.liferay.portal.search.elastic;
+
+import com.liferay.portal.kernel.search.Document;
+import com.liferay.portal.kernel.search.DocumentImpl;
+import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.Hits;
+import com.liferay.portal.kernel.search.HitsImpl;
+import com.liferay.portal.kernel.search.IndexSearcher;
+import com.liferay.portal.kernel.search.Query;
+import com.liferay.portal.kernel.search.QueryConfig;
+import com.liferay.portal.kernel.search.SearchContext;
+import com.liferay.portal.kernel.search.SearchException;
+import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.search.facet.Facet;
+import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.search.elastic.facet.ElasticsearchFacetFieldCollector;
+
+import org.elasticsearch.action.ActionFuture;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHitField;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.facet.Facets;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * @author Michael C. Han
+ * @author Milen Dyankov
+ */
+public class ElasticsearchIndexSearcher implements IndexSearcher {
+
+    @Override
+    public Hits search(SearchContext searchContext, Query query) {
+        Client client = new TransportClient().addTransportAddress(new InetSocketTransportAddress(serverIP,port));
+
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(
+                String.valueOf(searchContext.getCompanyId()));
+
+        QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
+
+        searchRequestBuilder.setQuery(queryBuilder);
+
+        searchRequestBuilder.setTypes("LiferayDocuments");
+
+        SearchRequest searchRequest = searchRequestBuilder.request();
+
+        ActionFuture<SearchResponse> future = client.search(searchRequest);
+
+        SearchResponse searchResponse = future.actionGet();
+
+        updateFacetCollectors(searchContext, searchResponse);
+
+        Hits hits = processSearchHits(
+                searchResponse.getHits(), query.getQueryConfig());
+
+        hits.setQuery(query);
+
+        TimeValue timeValue = searchResponse.getTook();
+
+        hits.setSearchTime((float) timeValue.getSecondsFrac());
+        return hits;
+    }
+
+    @Override
+    public Hits search(String searchEngineId, long companyId, Query query, Sort[] sort, int start, int end) throws SearchException {
+        Client client = new TransportClient().addTransportAddress(new InetSocketTransportAddress(serverIP,port));
+
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(
+                String.valueOf(companyId));
+
+        QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
+
+        searchRequestBuilder.setQuery(queryBuilder);
+
+        searchRequestBuilder.setTypes("LiferayDocuments");
+
+        SearchRequest searchRequest = searchRequestBuilder.request();
+
+        ActionFuture<SearchResponse> future = client.search(searchRequest);
+
+        SearchResponse searchResponse = future.actionGet();
+
+
+        Hits hits = processSearchHits(
+                searchResponse.getHits(), query.getQueryConfig());
+
+        hits.setQuery(query);
+
+        TimeValue timeValue = searchResponse.getTook();
+
+        hits.setSearchTime((float) timeValue.getSecondsFrac());
+        return hits;
+    }
+
+
+    protected Document processSearchHit(SearchHit hit) {
+        Document document = new DocumentImpl();
+
+        Map<String, SearchHitField> searchHitFields = hit.getFields();
+
+        for (Map.Entry<String, SearchHitField> entry :
+                searchHitFields.entrySet()) {
+
+            SearchHitField searchHitField = entry.getValue();
+
+            Collection<Object> fieldValues = searchHitField.getValues();
+
+            Field field = new Field(
+                    entry.getKey(),
+                    ArrayUtil.toStringArray(
+                            fieldValues.toArray(new Object[fieldValues.size()]))
+            );
+
+            document.add(field);
+        }
+
+        return document;
+    }
+
+    protected Hits processSearchHits(
+            SearchHits searchHits, QueryConfig queryConfig) {
+
+        Hits hits = new HitsImpl();
+
+        List<Document> documents = new ArrayList<Document>();
+        Set<String> queryTerms = new HashSet<String>();
+        List<Float> scores = new ArrayList<Float>();
+
+        if (searchHits.totalHits() > 0) {
+            SearchHit[] searchHitsArray = searchHits.getHits();
+
+            for (SearchHit searchHit : searchHitsArray) {
+                Document document = processSearchHit(searchHit);
+                documents.add(document);
+                scores.add(searchHit.getScore());
+            }
+        }
+
+        hits.setDocs(documents.toArray(new Document[documents.size()]));
+        hits.setLength((int) searchHits.getTotalHits());
+        hits.setQueryTerms(queryTerms.toArray(new String[queryTerms.size()]));
+        hits.setScores(scores.toArray(new Float[scores.size()]));
+
+        return hits;
+    }
+
+    protected void updateFacetCollectors(
+            SearchContext searchContext, SearchResponse searchResponse) {
+
+        Map<String, Facet> facetsMap = searchContext.getFacets();
+
+        for (Facet facet : facetsMap.values()) {
+            if (facet.isStatic()) {
+                continue;
+            }
+
+            Facets facets = searchResponse.getFacets();
+
+            org.elasticsearch.search.facet.Facet elasticsearchFacet =
+                    facets.facet(facet.getFieldName());
+
+            FacetCollector facetCollector =
+                    new ElasticsearchFacetFieldCollector(elasticsearchFacet);
+
+            facet.setFacetCollector(facetCollector);
+        }
+    }
+
+    private String serverIP;
+
+    private int port;
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public void setServerIP(String serverIP) {
+        this.serverIP = serverIP;
+    }
+}
