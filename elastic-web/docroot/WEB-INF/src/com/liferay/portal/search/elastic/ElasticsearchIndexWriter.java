@@ -51,6 +51,8 @@ import java.util.concurrent.Future;
  */
 public class ElasticsearchIndexWriter implements IndexWriter {
 
+    private Client client;
+
     @Override
     public void addDocument(SearchContext searchContext, Document document)
             throws SearchException {
@@ -225,8 +227,44 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         }
     }
 
+    @Override
+    public void clearQuerySuggestionDictionaryIndexes(
+            SearchContext searchContext) {
+    }
+
+    @Override
+    public void clearSpellCheckerDictionaryIndexes(
+            SearchContext searchContext) {
+    }
+
+    @Override
+    public void indexKeyword(
+            SearchContext searchContext, float weight, String keywordType) {
+    }
+
+    @Override
+    public void indexQuerySuggestionDictionaries(SearchContext searchContext) {
+    }
+
+    @Override
+    public void indexQuerySuggestionDictionary(SearchContext searchContext) {
+    }
+
+    @Override
+    public void indexSpellCheckerDictionaries(SearchContext searchContext) {
+    }
+
+    @Override
+    public void indexSpellCheckerDictionary(SearchContext searchContext) {
+    }
+
+
+
     private Client getClient() {
-        return new TransportClient().addTransportAddress(new InetSocketTransportAddress(serverIP,port));
+        if (client == null) {
+            client = new TransportClient().addTransportAddress(new InetSocketTransportAddress(serverIP, port));
+        }
+        return client;
     }
 
     private String getElasticsearchDocument(Document document)
@@ -302,6 +340,12 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
         return updateRequestBuilder;
     }
+
+    public void afterPropertiesSet() {
+        client = new TransportClient().addTransportAddress(new InetSocketTransportAddress(serverIP, port));
+    }
+
+
 
     private String serverIP;
 

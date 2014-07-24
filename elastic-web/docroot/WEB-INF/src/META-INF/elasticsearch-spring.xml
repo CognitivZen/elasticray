@@ -28,7 +28,7 @@
 	</bean>
 
 
-    <bean id="searchEngineConfigurator.solr" class="com.liferay.portal.kernel.search.PluginSearchEngineConfigurator">
+    <bean id="searchEngineConfigurator.elastic" class="com.liferay.portal.kernel.search.PluginSearchEngineConfigurator">
         <property name="searchEngines">
             <util:map>
                 <entry key="SYSTEM_ENGINE" value-ref="com.liferay.portal.search.elastic.ElasticsearchEngineImpl" />

@@ -28,6 +28,7 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.search.elastic.facet.ElasticsearchFacetFieldCollector;
 
 import org.elasticsearch.action.ActionFuture;
@@ -47,6 +48,7 @@ import org.elasticsearch.search.facet.Facets;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +62,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
     @Override
     public Hits search(SearchContext searchContext, Query query) {
-        Client client = new TransportClient().addTransportAddress(new InetSocketTransportAddress(serverIP,port));
+        Client client = getClient();
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(
                 String.valueOf(searchContext.getCompanyId()));
@@ -92,7 +94,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
     @Override
     public Hits search(String searchEngineId, long companyId, Query query, Sort[] sort, int start, int end) throws SearchException {
-        Client client = new TransportClient().addTransportAddress(new InetSocketTransportAddress(serverIP,port));
+        Client client = getClient();
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(
                 String.valueOf(companyId));
@@ -120,6 +122,26 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         hits.setSearchTime((float) timeValue.getSecondsFrac());
         return hits;
     }
+
+    @Override
+    public String spellCheckKeywords(SearchContext searchContext) {
+        return StringPool.BLANK;
+    }
+
+    @Override
+    public Map<String, List<String>> spellCheckKeywords(
+            SearchContext searchContext, int max) {
+
+        return Collections.emptyMap();
+    }
+
+    @Override
+    public String[] suggestKeywordQueries(
+            SearchContext searchContext, int max) {
+
+        return new String[0];
+    }
+
 
 
     protected Document processSearchHit(SearchHit hit) {
@@ -194,6 +216,19 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             facet.setFacetCollector(facetCollector);
         }
     }
+
+    private Client getClient() {
+        if (client == null) {
+            client = new TransportClient().addTransportAddress(new InetSocketTransportAddress(serverIP, port));
+        }
+        return client;
+    }
+
+    public void afterPropertiesSet() {
+        client = new TransportClient().addTransportAddress(new InetSocketTransportAddress(serverIP, port));
+    }
+
+    private Client client;
 
     private String serverIP;
 
