@@ -37,6 +37,8 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -219,13 +221,19 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
     private Client getClient() {
         if (client == null) {
-            client = new TransportClient().addTransportAddress(new InetSocketTransportAddress(serverIP, port));
+            Settings settings = ImmutableSettings.settingsBuilder().classLoader(ElasticsearchIndexSearcher.class.getClassLoader()).build();
+            client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(serverIP, port));
         }
         return client;
     }
 
     public void afterPropertiesSet() {
-        client = new TransportClient().addTransportAddress(new InetSocketTransportAddress(serverIP, port));
+        Settings settings = ImmutableSettings.settingsBuilder().classLoader(ElasticsearchIndexSearcher.class.getClassLoader()).build();
+        client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(serverIP, port));
+    }
+
+    public void destroy() {
+        client.close();
     }
 
     private Client client;

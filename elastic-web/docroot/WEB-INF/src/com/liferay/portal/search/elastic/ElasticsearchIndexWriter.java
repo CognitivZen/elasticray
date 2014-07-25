@@ -33,6 +33,8 @@ import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -262,9 +264,14 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
     private Client getClient() {
         if (client == null) {
-            client = new TransportClient().addTransportAddress(new InetSocketTransportAddress(serverIP, port));
+            Settings settings = ImmutableSettings.settingsBuilder().classLoader(ElasticsearchIndexSearcher.class.getClassLoader()).build();
+            client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(serverIP, port));
         }
         return client;
+    }
+
+    public void destroy() {
+        client.close();
     }
 
     private String getElasticsearchDocument(Document document)
@@ -342,7 +349,8 @@ public class ElasticsearchIndexWriter implements IndexWriter {
     }
 
     public void afterPropertiesSet() {
-        client = new TransportClient().addTransportAddress(new InetSocketTransportAddress(serverIP, port));
+        Settings settings = ImmutableSettings.settingsBuilder().classLoader(ElasticsearchIndexSearcher.class.getClassLoader()).build();
+        client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(serverIP, port));
     }
 
 
