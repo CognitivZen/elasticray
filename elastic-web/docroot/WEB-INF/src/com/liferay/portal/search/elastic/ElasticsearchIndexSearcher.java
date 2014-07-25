@@ -149,22 +149,19 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     protected Document processSearchHit(SearchHit hit) {
         Document document = new DocumentImpl();
 
-        Map<String, SearchHitField> searchHitFields = hit.getFields();
+       Map<String, Object> source = hit.getSource();
+  
+       for (String fieldName :
+        	source.keySet()) {
 
-        for (Map.Entry<String, SearchHitField> entry :
-                searchHitFields.entrySet()) {
-
-            SearchHitField searchHitField = entry.getValue();
-
-            Collection<Object> fieldValues = searchHitField.getValues();
-
-            Field field = new Field(
-                    entry.getKey(),
-                    ArrayUtil.toStringArray(
-                            fieldValues.toArray(new Object[fieldValues.size()]))
+        	String val =(String)source.get(fieldName);
+        	Field field = new Field(
+        			fieldName,
+                    new String[]{val}
             );
 
             document.add(field);
+            
         }
 
         return document;
