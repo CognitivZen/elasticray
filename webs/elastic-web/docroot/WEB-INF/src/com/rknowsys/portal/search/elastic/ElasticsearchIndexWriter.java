@@ -14,14 +14,11 @@
 
 package com.rknowsys.portal.search.elastic;
 
-import com.liferay.portal.kernel.search.Document;
-import com.liferay.portal.kernel.search.DocumentImpl;
-import com.liferay.portal.kernel.search.Field;
-import com.liferay.portal.kernel.search.IndexWriter;
-import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.search.SearchException;
-import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.Validator;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.Future;
 
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -32,20 +29,20 @@ import org.elasticsearch.action.deletebyquery.DeleteByQueryResponse;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.Future;
+import com.liferay.portal.kernel.search.Document;
+import com.liferay.portal.kernel.search.DocumentImpl;
+import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.IndexWriter;
+import com.liferay.portal.kernel.search.SearchContext;
+import com.liferay.portal.kernel.search.SearchException;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.rknowsys.portal.search.elastic.client.ClientFactory;
 
 /**
  * @author Michael C. Han
@@ -53,7 +50,7 @@ import java.util.concurrent.Future;
  */
 public class ElasticsearchIndexWriter implements IndexWriter {
 
-    private Client client;
+    private ClientFactory clientFactory;
 
     @Override
     public void addDocument(SearchContext searchContext, Document document)
@@ -260,19 +257,14 @@ public class ElasticsearchIndexWriter implements IndexWriter {
     public void indexSpellCheckerDictionary(SearchContext searchContext) {
     }
 
-
+    public void setClientFactory(ClientFactory clientFactory) {
+        this.clientFactory = clientFactory;
+    }
 
     private Client getClient() {
-        if (client == null) {
-            Settings settings = ImmutableSettings.settingsBuilder().classLoader(ElasticsearchIndexSearcher.class.getClassLoader()).build();
-            client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(serverIP, port));
-        }
-        return client;
+        return clientFactory.getClient();
     }
 
-    public void destroy() {
-        client.close();
-    }
 
     private String getElasticsearchDocument(Document document)
             throws IOException {
@@ -346,25 +338,6 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         updateRequestBuilder.setDocAsUpsert(true);
 
         return updateRequestBuilder;
-    }
-
-    public void afterPropertiesSet() {
-        Settings settings = ImmutableSettings.settingsBuilder().classLoader(ElasticsearchIndexSearcher.class.getClassLoader()).build();
-        client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(serverIP, port));
-    }
-
-
-
-    private String serverIP;
-
-    private int port;
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public void setServerIP(String serverIP) {
-        this.serverIP = serverIP;
     }
 
 

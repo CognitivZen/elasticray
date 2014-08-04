@@ -10,7 +10,10 @@
 >
 	<bean class="com.liferay.portal.spring.context.PortletBeanFactoryPostProcessor" />
 
-
+    <bean id="com.rknowsys.portal.search.elastic.client.ClientFactory" class="com.rknowsys.portal.search.elastic.client.ClientFactoryImpl">
+        <property name="port" value="9300"/>
+        <property name="serverIP" value="127.0.0.1"/>
+    </bean>
 	<bean id="com.rknowsys.portal.search.elastic.ElasticsearchEngineImpl" class="com.liferay.portal.kernel.search.BaseSearchEngine">
 		<property name="clusteredWrite" value="false" />
 		<property name="indexSearcher" ref="com.rknowsys.portal.search.elastic.ElasticsearchIndexSearcher" />
@@ -19,12 +22,10 @@
 		<property name="vendor" value="Elasticsearch" />
 	</bean>
 	<bean id="com.rknowsys.portal.search.elastic.ElasticsearchIndexSearcher" class="com.rknowsys.portal.search.elastic.ElasticsearchIndexSearcher">
-        <property name="serverIP" value="127.0.0.1"/>
-        <property name="port" value="9300"/>
-	</bean>
+        <property name="clientFactory" ref="com.rknowsys.portal.search.elastic.client.ClientFactory" />
+   	</bean>
 	<bean id="com.rknowsys.portal.search.elastic.ElasticsearchIndexWriter" class="com.rknowsys.portal.search.elastic.ElasticsearchIndexWriter" >
-        <property name="serverIP" value="127.0.0.1"/>
-        <property name="port" value="9300"/>
+        <property name="clientFactory" ref="com.rknowsys.portal.search.elastic.client.ClientFactory"/>
 	</bean>
 
 

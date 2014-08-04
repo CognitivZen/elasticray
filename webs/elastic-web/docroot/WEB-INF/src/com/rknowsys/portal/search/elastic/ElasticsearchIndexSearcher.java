@@ -14,6 +14,25 @@
 
 package com.rknowsys.portal.search.elastic;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.elasticsearch.action.ActionFuture;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.facet.Facets;
+
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentImpl;
 import com.liferay.portal.kernel.search.Field;
@@ -27,40 +46,17 @@ import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
-import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.StringPool;
+import com.rknowsys.portal.search.elastic.client.ClientFactory;
 import com.rknowsys.portal.search.elastic.facet.ElasticsearchFacetFieldCollector;
-
-import org.elasticsearch.action.ActionFuture;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHitField;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.facet.Facets;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Michael C. Han
  * @author Milen Dyankov
  */
 public class ElasticsearchIndexSearcher implements IndexSearcher {
+
+    private ClientFactory clientFactory;
 
     @Override
     public Hits search(SearchContext searchContext, Query query) {
@@ -145,18 +141,17 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     }
 
 
-
     protected Document processSearchHit(SearchHit hit) {
         Document document = new DocumentImpl();
 
-       Map<String, Object> source = hit.getSource();
+        Map<String, Object> source = hit.getSource();
 
-       for (String fieldName :
-        	source.keySet()) {
+        for (String fieldName :
+                source.keySet()) {
 
-        	String val =(String)source.get(fieldName);
-        	Field field = new Field(
-        			fieldName,
+            String val = (String) source.get(fieldName);
+            Field field = new Field(
+                    fieldName,
                     new String[]{val}
             );
 
@@ -216,34 +211,13 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         }
     }
 
+    public void setClientFactory(ClientFactory clientFactory) {
+        this.clientFactory = clientFactory;
+    }
+
     private Client getClient() {
-        if (client == null) {
-            Settings settings = ImmutableSettings.settingsBuilder().classLoader(ElasticsearchIndexSearcher.class.getClassLoader()).build();
-            client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(serverIP, port));
-        }
-        return client;
+        return clientFactory.getClient();
     }
 
-    public void afterPropertiesSet() {
-        Settings settings = ImmutableSettings.settingsBuilder().classLoader(ElasticsearchIndexSearcher.class.getClassLoader()).build();
-        client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(serverIP, port));
-    }
 
-    public void destroy() {
-        client.close();
-    }
-
-    private Client client;
-
-    private String serverIP;
-
-    private int port;
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public void setServerIP(String serverIP) {
-        this.serverIP = serverIP;
-    }
 }
