@@ -11,18 +11,18 @@
 	<bean class="com.liferay.portal.spring.context.PortletBeanFactoryPostProcessor" />
 
 
-	<bean id="com.liferay.portal.search.elastic.ElasticsearchEngineImpl" class="com.liferay.portal.kernel.search.BaseSearchEngine">
+	<bean id="com.rknowsys.portal.search.elastic.ElasticsearchEngineImpl" class="com.liferay.portal.kernel.search.BaseSearchEngine">
 		<property name="clusteredWrite" value="false" />
-		<property name="indexSearcher" ref="com.liferay.portal.search.elastic.ElasticsearchIndexSearcher" />
-		<property name="indexWriter" ref="com.liferay.portal.search.elastic.ElasticsearchIndexWriter" />
+		<property name="indexSearcher" ref="com.rknowsys.portal.search.elastic.ElasticsearchIndexSearcher" />
+		<property name="indexWriter" ref="com.rknowsys.portal.search.elastic.ElasticsearchIndexWriter" />
 		<property name="luceneBased" value="true" />
 		<property name="vendor" value="Elasticsearch" />
 	</bean>
-	<bean id="com.liferay.portal.search.elastic.ElasticsearchIndexSearcher" class="com.liferay.portal.search.elastic.ElasticsearchIndexSearcher">
+	<bean id="com.rknowsys.portal.search.elastic.ElasticsearchIndexSearcher" class="com.rknowsys.portal.search.elastic.ElasticsearchIndexSearcher">
         <property name="serverIP" value="127.0.0.1"/>
         <property name="port" value="9300"/>
 	</bean>
-	<bean id="com.liferay.portal.search.elastic.ElasticsearchIndexWriter" class="com.liferay.portal.search.elastic.ElasticsearchIndexWriter" >
+	<bean id="com.rknowsys.portal.search.elastic.ElasticsearchIndexWriter" class="com.rknowsys.portal.search.elastic.ElasticsearchIndexWriter" >
         <property name="serverIP" value="127.0.0.1"/>
         <property name="port" value="9300"/>
 	</bean>
@@ -31,7 +31,7 @@
     <bean id="searchEngineConfigurator.elastic" class="com.liferay.portal.kernel.search.PluginSearchEngineConfigurator">
         <property name="searchEngines">
             <util:map>
-                <entry key="SYSTEM_ENGINE" value-ref="com.liferay.portal.search.elastic.ElasticsearchEngineImpl" />
+                <entry key="SYSTEM_ENGINE" value-ref="com.rknowsys.portal.search.elastic.ElasticsearchEngineImpl" />
             </util:map>
         </property>
     </bean>

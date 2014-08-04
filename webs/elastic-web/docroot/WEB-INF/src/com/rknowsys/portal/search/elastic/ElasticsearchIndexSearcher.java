@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.portal.search.elastic;
+package com.rknowsys.portal.search.elastic;
 
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentImpl;
@@ -29,7 +29,7 @@ import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.search.elastic.facet.ElasticsearchFacetFieldCollector;
+import com.rknowsys.portal.search.elastic.facet.ElasticsearchFacetFieldCollector;
 
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.search.SearchRequest;
@@ -150,7 +150,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         Document document = new DocumentImpl();
 
        Map<String, Object> source = hit.getSource();
-  
+
        for (String fieldName :
         	source.keySet()) {
 
@@ -161,7 +161,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             );
 
             document.add(field);
-            
+
         }
 
         return document;

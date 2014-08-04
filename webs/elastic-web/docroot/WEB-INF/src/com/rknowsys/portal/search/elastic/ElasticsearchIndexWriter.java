@@ -12,7 +12,7 @@
  * details.
  */
 
-package com.liferay.portal.search.elastic;
+package com.rknowsys.portal.search.elastic;
 
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentImpl;

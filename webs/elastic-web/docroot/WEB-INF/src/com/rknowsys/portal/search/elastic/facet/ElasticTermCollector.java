@@ -3,7 +3,7 @@
  *
  * $Id$
  */
-package com.liferay.portal.search.elastic.facet;
+package com.rknowsys.portal.search.elastic.facet;
 
 import com.liferay.portal.kernel.search.facet.collector.TermCollector;
 
