@@ -1,6 +1,6 @@
 # ElasticRay
 
-This is a webs liferay plugin for elastic search. It implements the interfaces as defined for liferay web plugins. 
+This is a liferay webs plugin for elastic search. It implements the interfaces as defined for liferay search plugins. 
 
 
 ## Usage
