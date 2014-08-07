@@ -59,66 +59,75 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     private ClientFactory clientFactory;
 
     @Override
-    public Hits search(SearchContext searchContext, Query query) {
-        Client client = getClient();
+    public Hits search(SearchContext searchContext, Query query) throws SearchException {
+        try {
+            Client client = getClient();
 
-        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(
-                String.valueOf(searchContext.getCompanyId()));
+            SearchRequestBuilder searchRequestBuilder = client.prepareSearch(
+                    String.valueOf(searchContext.getCompanyId()));
 
-        QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
+            QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
 
-        searchRequestBuilder.setQuery(queryBuilder);
+            searchRequestBuilder.setQuery(queryBuilder);
 
-        searchRequestBuilder.setTypes("LiferayDocuments");
+            searchRequestBuilder.setTypes("LiferayDocuments");
 
-        SearchRequest searchRequest = searchRequestBuilder.request();
+            SearchRequest searchRequest = searchRequestBuilder.request();
 
-        ActionFuture<SearchResponse> future = client.search(searchRequest);
+            ActionFuture<SearchResponse> future = client.search(searchRequest);
 
-        SearchResponse searchResponse = future.actionGet();
+            SearchResponse searchResponse = future.actionGet();
 
-        updateFacetCollectors(searchContext, searchResponse);
+            updateFacetCollectors(searchContext, searchResponse);
 
-        Hits hits = processSearchHits(
-                searchResponse.getHits(), query.getQueryConfig());
+            Hits hits = processSearchHits(
+                    searchResponse.getHits(), query.getQueryConfig());
 
-        hits.setQuery(query);
+            hits.setQuery(query);
 
-        TimeValue timeValue = searchResponse.getTook();
+            TimeValue timeValue = searchResponse.getTook();
 
-        hits.setSearchTime((float) timeValue.getSecondsFrac());
-        return hits;
+            hits.setSearchTime((float) timeValue.getSecondsFrac());
+            return hits;
+        } catch (Exception e) {
+            throw new SearchException(e);
+        }
     }
 
     @Override
     public Hits search(String searchEngineId, long companyId, Query query, Sort[] sort, int start, int end) throws SearchException {
-        Client client = getClient();
 
-        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(
-                String.valueOf(companyId));
+        try {
+            Client client = getClient();
 
-        QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
+            SearchRequestBuilder searchRequestBuilder = client.prepareSearch(
+                    String.valueOf(companyId));
 
-        searchRequestBuilder.setQuery(queryBuilder);
+            QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
 
-        searchRequestBuilder.setTypes("LiferayDocuments");
+            searchRequestBuilder.setQuery(queryBuilder);
 
-        SearchRequest searchRequest = searchRequestBuilder.request();
+            searchRequestBuilder.setTypes("LiferayDocuments");
 
-        ActionFuture<SearchResponse> future = client.search(searchRequest);
+            SearchRequest searchRequest = searchRequestBuilder.request();
 
-        SearchResponse searchResponse = future.actionGet();
+            ActionFuture<SearchResponse> future = client.search(searchRequest);
+
+            SearchResponse searchResponse = future.actionGet();
 
 
-        Hits hits = processSearchHits(
-                searchResponse.getHits(), query.getQueryConfig());
+            Hits hits = processSearchHits(
+                    searchResponse.getHits(), query.getQueryConfig());
 
-        hits.setQuery(query);
+            hits.setQuery(query);
 
-        TimeValue timeValue = searchResponse.getTook();
+            TimeValue timeValue = searchResponse.getTook();
 
-        hits.setSearchTime((float) timeValue.getSecondsFrac());
-        return hits;
+            hits.setSearchTime((float) timeValue.getSecondsFrac());
+            return hits;
+        } catch (Exception e) {
+            throw new SearchException(e);
+        }
     }
 
     @Override

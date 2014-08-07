@@ -6,6 +6,8 @@
 
 package com.rknowsys.portal.search.elastic.client;
 
+import java.util.Properties;
+
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -25,6 +27,8 @@ public class ClientFactoryImpl implements ClientFactory {
 
     private int port;
 
+    private Properties properties;
+
     @Override
     public Client getClient() {
         return client;
@@ -38,12 +42,17 @@ public class ClientFactoryImpl implements ClientFactory {
         this.port = port;
     }
 
+    public void setProperties(Properties properties) {
+        this.properties = properties;
+    }
+
     public void destroy() {
         client.close();
     }
 
     public void afterPropertiesSet() {
-        Settings settings = ImmutableSettings.settingsBuilder().classLoader(ClientFactoryImpl.class.getClassLoader()).build();
+        Settings settings = ImmutableSettings.settingsBuilder().classLoader(ClientFactoryImpl.class.getClassLoader()).
+                put(properties).build();
         client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(serverIP,port));
     }
 }

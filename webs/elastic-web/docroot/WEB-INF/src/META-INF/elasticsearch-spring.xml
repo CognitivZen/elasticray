@@ -13,6 +13,11 @@
     <bean id="com.rknowsys.portal.search.elastic.client.ClientFactory" class="com.rknowsys.portal.search.elastic.client.ClientFactoryImpl">
         <property name="port" value="9300"/>
         <property name="serverIP" value="127.0.0.1"/>
+        <property name="properties">
+            <props>
+                <prop key="cluster.name">elasticsearch</prop>
+            </props>
+        </property>
     </bean>
 	<bean id="com.rknowsys.portal.search.elastic.ElasticsearchEngineImpl" class="com.liferay.portal.kernel.search.BaseSearchEngine">
 		<property name="clusteredWrite" value="false" />
