@@ -1,8 +1,3 @@
-/*
- * @author ajaykottapally
- *
- * $Id$
- */
 
 package com.rknowsys.portal.search.elastic.client;
 

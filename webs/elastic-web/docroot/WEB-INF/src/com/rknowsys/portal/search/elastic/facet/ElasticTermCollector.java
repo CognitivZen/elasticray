@@ -1,8 +1,3 @@
-/*
- * @author ajaykottapally
- *
- * $Id$
- */
 package com.rknowsys.portal.search.elastic.facet;
 
 import com.liferay.portal.kernel.search.facet.collector.TermCollector;
