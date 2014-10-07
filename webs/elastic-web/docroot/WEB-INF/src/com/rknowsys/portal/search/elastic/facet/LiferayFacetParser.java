@@ -40,7 +40,7 @@ public class LiferayFacetParser {
             if (rangesJSONArray != null) {
                 rangeFacetBuilder.field(facetConfiguration.getFieldName());
                 for ( int i =0; i < rangesJSONArray.length(); i++) {
-                    JSONObject rangeJSONObject = rangesJSONArray.getJSONObject(0);
+                    JSONObject rangeJSONObject = rangesJSONArray.getJSONObject(i);
                     String rangeString = rangeJSONObject.getString("range");
                     String[] range = RangeParserUtil.parserRange(rangeString);
                     rangeFacetBuilder.addRange(range[0], range[1]);

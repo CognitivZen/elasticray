@@ -39,8 +39,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             throws SearchException {
         try {
             UpdateRequestBuilder updateRequestBuilder =
-                    getUpdateRequestBuilder(
-                            "LiferayDocuments", searchContext, document);
+                    getUpdateRequestBuilder(searchContext, document);
 
             Future<UpdateResponse> future = updateRequestBuilder.execute();
 
@@ -65,8 +64,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
             for (Document document : documents) {
                 UpdateRequestBuilder updateRequestBuilder =
-                        getUpdateRequestBuilder(
-                                "LiferayDocuments", searchContext, document);
+                        getUpdateRequestBuilder(searchContext, document);
 
                 bulkRequestBuilder.add(updateRequestBuilder);
             }
@@ -90,8 +88,8 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             Client client = getClient();
 
             DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(
-                    String.valueOf(searchContext.getCompanyId()),
-                    "LiferayDocuments", uid);
+                    String.valueOf("liferay_" + searchContext.getCompanyId()),
+                    "documents", uid);
 
             Future<DeleteResponse> future = deleteRequestBuilder.execute();
 
@@ -115,8 +113,8 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             for (String uid : uids) {
                 DeleteRequestBuilder deleteRequestBuilder =
                         client.prepareDelete(
-                                String.valueOf(searchContext.getCompanyId()),
-                                "LiferayDocuments", uid);
+                                String.valueOf("liferay_" + searchContext.getCompanyId()),
+                                "documents", uid);
 
                 bulkRequestBuilder.add(deleteRequestBuilder);
             }
@@ -167,8 +165,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
         try {
             UpdateRequestBuilder updateRequestBuilder =
-                    getUpdateRequestBuilder(
-                            "LiferayDocuments", searchContext, document);
+                    getUpdateRequestBuilder(searchContext, document);
 
             Future<UpdateResponse> future = updateRequestBuilder.execute();
 
@@ -193,7 +190,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             for (Document document : documents) {
                 UpdateRequestBuilder updateRequestBuilder =
                         getUpdateRequestBuilder(
-                                "LiferayDocuments", searchContext, document);
+                                 searchContext, document);
 
                 bulkRequestBuilder.add(updateRequestBuilder);
             }
@@ -265,7 +262,6 @@ public class ElasticsearchIndexWriter implements IndexWriter {
                     if (Validator.isNull(value)) {
                         continue;
                     }
-
                     xContentBuilder.field(name, value.trim());
                 }
             } else {
@@ -305,13 +301,13 @@ public class ElasticsearchIndexWriter implements IndexWriter {
     }
 
     private UpdateRequestBuilder getUpdateRequestBuilder(
-            String documentType, SearchContext searchContext, Document document)
+            SearchContext searchContext, Document document)
             throws IOException {
 
         Client client = getClient();
 
         UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(
-                String.valueOf(searchContext.getCompanyId()), documentType,
+                String.valueOf("liferay_" + searchContext.getCompanyId()), "documents",
                 document.getUID());
 
         String elasticSearchDocument = getElasticsearchDocument(document);
@@ -321,6 +317,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
         return updateRequestBuilder;
     }
+
 
 
 }

@@ -1,17 +1,11 @@
 package com.rknowsys.portal.search.elastic;
 
-import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.search.*;
 import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.search.facet.MultiValueFacet;
 import com.liferay.portal.kernel.search.facet.RangeFacet;
 import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
-import com.liferay.portal.kernel.search.facet.config.FacetConfiguration;
-import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.rknowsys.portal.search.elastic.client.ClientFactory;
 import com.rknowsys.portal.search.elastic.facet.ElasticsearchFacetFieldCollector;
 import com.rknowsys.portal.search.elastic.facet.LiferayFacetParser;
@@ -21,15 +15,12 @@ import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.facet.FacetBuilder;
-import org.elasticsearch.search.facet.FacetBuilders;
 import org.elasticsearch.search.facet.Facets;
-import org.elasticsearch.search.facet.filter.FilterFacetBuilder;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -45,18 +36,18 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         try {
             Client client = getClient();
 
-            SearchRequestBuilder searchRequestBuilder = client.prepareSearch(
+            SearchRequestBuilder searchRequestBuilder = client.prepareSearch("liferay_" +
                     String.valueOf(searchContext.getCompanyId()));
 
             QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
 
             searchRequestBuilder.setQuery(queryBuilder);
 
-            searchRequestBuilder.setTypes("LiferayDocuments");
+            searchRequestBuilder.setTypes("documents");
 
             addFacetCollectorsToSearch(searchContext, searchRequestBuilder);
 
-            addSortToSearch(searchContext.getSorts(),searchRequestBuilder);
+            addSortToSearch(searchContext.getSorts(), searchRequestBuilder);
 
             SearchRequest searchRequest = searchRequestBuilder.request();
 
@@ -81,24 +72,22 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     }
 
 
-
-
     @Override
     public Hits search(String searchEngineId, long companyId, Query query, Sort[] sort, int start, int end) throws SearchException {
 
         try {
             Client client = getClient();
 
-            SearchRequestBuilder searchRequestBuilder = client.prepareSearch(
+            SearchRequestBuilder searchRequestBuilder = client.prepareSearch("liferay_" +
                     String.valueOf(companyId));
 
             QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
 
             searchRequestBuilder.setQuery(queryBuilder);
 
-            searchRequestBuilder.setTypes("LiferayDocuments");
+            searchRequestBuilder.setTypes("documents");
 
-            addSortToSearch(sort,searchRequestBuilder);
+            addSortToSearch(sort, searchRequestBuilder);
 
             SearchRequest searchRequest = searchRequestBuilder.request();
 
@@ -231,9 +220,9 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         if (sorts == null) {
             return;
         }
-        for(Sort sort : sorts) {
+        for (Sort sort : sorts) {
             SortBuilder sortBuilder = SortBuilders.fieldSort(sort.getFieldName()).ignoreUnmapped(true)
-                    .order(sort.isReverse()? SortOrder.DESC: SortOrder.ASC);
+                    .order(sort.isReverse() ? SortOrder.DESC : SortOrder.ASC);
             searchRequestBuilder.addSort(sortBuilder);
 
         }
