@@ -1,13 +1,7 @@
-
 package com.rknowsys.portal.search.elastic.client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Iterator;
-import java.util.Properties;
-
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PropsUtil;
 import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
@@ -15,6 +9,12 @@ import org.elasticsearch.cluster.metadata.IndexTemplateMetaData;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Properties;
 
 /**
  * //TODO Comment goes here
@@ -27,27 +27,10 @@ public class ClientFactoryImpl implements ClientFactory {
 
     private Client client;
 
-    private String serverIP;
-
-    private int port;
-
-    private Properties properties;
 
     @Override
     public Client getClient() {
         return client;
-    }
-
-    public void setServerIP(String serverIP) {
-        this.serverIP = serverIP;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public void setProperties(Properties properties) {
-        this.properties = properties;
     }
 
     public void destroy() {
@@ -55,12 +38,19 @@ public class ClientFactoryImpl implements ClientFactory {
     }
 
     public void afterPropertiesSet() {
+
+        Properties properties = PropsUtil.getProperties("elasticsearch.", true);
+
+        String serverIP = properties.getProperty("serverIP", "localhost");
+        int port = GetterUtil.get(properties.getProperty("portNumber"), 9300);
+
         Settings settings = ImmutableSettings.settingsBuilder().classLoader(ClientFactoryImpl.class.getClassLoader()).
                 put(properties).build();
-        client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(serverIP,port));
 
-        GetIndexTemplatesResponse gitr =  client.admin().indices().prepareGetTemplates("Liferay_Template").execute().actionGet();
-        boolean exists  =false;
+        client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(serverIP, port));
+
+        GetIndexTemplatesResponse gitr = client.admin().indices().prepareGetTemplates("Liferay_Template").execute().actionGet();
+        boolean exists = false;
 
         for (IndexTemplateMetaData indexTemplateMetaData : gitr.getIndexTemplates()) {
             if (indexTemplateMetaData.getName().equals(Liferay_Template)) {

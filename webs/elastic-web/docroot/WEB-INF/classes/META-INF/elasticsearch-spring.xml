@@ -10,11 +10,8 @@
 >
 	<bean class="com.liferay.portal.spring.context.PortletBeanFactoryPostProcessor" />
 
-    <bean id="com.rknowsys.portal.search.elastic.client.ClientFactory" class="com.rknowsys.portal.search.elastic.client.ClientFactoryImpl">
-        <property name="port" value="9300"/>
-        <property name="serverIP" value="127.0.0.1"/>
-    </bean>
-	<bean id="com.rknowsys.portal.search.elastic.ElasticsearchEngineImpl" class="com.liferay.portal.kernel.search.BaseSearchEngine">
+    <bean id="com.rknowsys.portal.search.elastic.client.ClientFactory" class="com.rknowsys.portal.search.elastic.client.ClientFactoryImpl" destroy-method="destroy"/>
+    <bean id="com.rknowsys.portal.search.elastic.ElasticsearchEngineImpl" class="com.liferay.portal.kernel.search.BaseSearchEngine">
 		<property name="clusteredWrite" value="false" />
 		<property name="indexSearcher" ref="com.rknowsys.portal.search.elastic.ElasticsearchIndexSearcher" />
 		<property name="indexWriter" ref="com.rknowsys.portal.search.elastic.ElasticsearchIndexWriter" />
