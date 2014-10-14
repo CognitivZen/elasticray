@@ -1,9 +1,8 @@
 ## Elasticray
+#####Free and Open Source Liferay Web Plugin for Elasticsearch(the flexible and powerful open source, distributed, real-time search and analytics engine). 
 
-###Free and Open Source Liferay Web Plugin for Elasticsearch(the flexible and powerful open source, distributed, real-time search and analytics engine). 
 
-## How to use this plugin?
-
+### How to use this plugin?
 1) Download the Elasticray source from [here](https://github.com/R-Knowsys/elasticray/archive/master.zip) and deploy the plugin in your Liferay installation.
 
 2) Configure Elasticsearch server URL in elasticsearch-spring.xml
@@ -20,3 +19,6 @@
 	            </props>
 	       </property>
 	
+
+### Development Status
+Development is complete and right now the plugin is under testing. It is been submitted to the Liferay Marketplace.
