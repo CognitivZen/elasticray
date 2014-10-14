@@ -1,19 +1,22 @@
-# ElasticRay
+## Elasticray
 
-This is a liferay webs plugin for elastic search. It implements the interfaces as defined for liferay search plugins. 
+###Free and Open Source Liferay Web Plugin for Elasticsearch(the flexible and powerful open source, distributed, real-time search and analytics engine). 
 
+## How to use this plugin?
 
-## Usage
+1) Download the Elasticray source from [here](https://github.com/R-Knowsys/elasticray/archive/master.zip) and deploy the plugin in your Liferay installation.
 
-After deploying the plugin, ensure to point to the right URL of the elastic search server in "webapps\elastic-web\WEB-INF\classes\META-INF\elasticsearch-spring.xml". Modify the following lines to the correct elastic search server. Change serverIP and port to the required values.
-Change Properties as required.
+2) Configure Elasticsearch server URL in elasticsearch-spring.xml
+	Go to "webapps\elastic-web\WEB-INF\classes\META-INF\elasticsearch-spring.xml". 
+	Modify the following lines to the correct Elasticsearch server. Change serverIP and port to the required values.
+	Change Properties as required.
  
-    <bean id="com.rknowsys.portal.search.elastic.client.ClientFactory" class="com.rknowsys.portal.search.elastic.client.ClientFactoryImpl">
-       <property name="port" value="9300"/>
-       <property name="serverIP" value="127.0.0.1"/>
-       <property name="properties">
-            <props>
-                <prop key="cluster.name">elasticsearch</prop>
-            </props>
-       </property>
+	    <bean id="com.rknowsys.portal.search.elastic.client.ClientFactory" 	 class="com.rknowsys.portal.search.elastic.client.ClientFactoryImpl">
+	       <property name="port" value="9300"/>
+	       <property name="serverIP" value="127.0.0.1"/>
+	       <property name="properties">
+	            <props>
+	                <prop key="cluster.name">elasticsearch</prop>
+	            </props>
+	       </property>
 	
