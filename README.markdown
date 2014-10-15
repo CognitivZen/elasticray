@@ -8,6 +8,7 @@
 http://www.elasticsearch.org/download/
 	b) Based on the OS, you can use the corresponding file. For windows get the zip file and unzip to a folder say ES_INSTALL_DIR
 	c) Run elasticsearch.bat (if in windows) from ES_INSTALL_DIR/bin
+	
 2) Add the following lines to the portal-ext.properties file which point to the correct ip address and port of elastic search server. Restart liferay.
 
 	elasticsearch.serverIP=127.0.0.1
