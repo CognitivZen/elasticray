@@ -1,5 +1,7 @@
 package com.rknowsys.portal.search.elastic;
 
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.*;
 import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.search.facet.MultiValueFacet;
@@ -43,6 +45,8 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
             searchRequestBuilder.setQuery(queryBuilder);
 
+            _log.info("Query String  " + queryBuilder.toString());
+
             searchRequestBuilder.setTypes("documents");
 
             addFacetCollectorsToSearch(searchContext, searchRequestBuilder);
@@ -82,6 +86,8 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
                     String.valueOf(companyId));
 
             QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
+
+            _log.info("Query String" + queryBuilder.toString());
 
             searchRequestBuilder.setQuery(queryBuilder);
 
@@ -235,6 +241,8 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     private Client getClient() {
         return clientFactory.getClient();
     }
+
+    private static final Log _log = LogFactoryUtil.getLog(ElasticsearchIndexSearcher.class);
 
 
 }

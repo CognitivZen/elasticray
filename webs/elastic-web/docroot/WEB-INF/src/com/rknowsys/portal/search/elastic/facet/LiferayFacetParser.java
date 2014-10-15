@@ -7,6 +7,8 @@ package com.rknowsys.portal.search.elastic.facet;
 
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.facet.MultiValueFacet;
 import com.liferay.portal.kernel.search.facet.RangeFacet;
@@ -25,7 +27,7 @@ import org.elasticsearch.search.facet.terms.TermsFacetBuilder;
  */
 public class LiferayFacetParser {
 
-    public static final String svnRevision = "$Id$";
+    private static final Log _log = LogFactoryUtil.getLog(LiferayFacetParser.class);
 
     public static FacetBuilder getFacetBuilder(RangeFacet rangeFacet) {
         FacetConfiguration facetConfiguration = rangeFacet.getFacetConfiguration();

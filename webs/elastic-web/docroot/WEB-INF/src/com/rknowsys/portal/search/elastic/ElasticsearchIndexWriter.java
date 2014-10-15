@@ -6,6 +6,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Future;
 
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
@@ -33,6 +35,9 @@ import com.rknowsys.portal.search.elastic.client.ClientFactory;
 public class ElasticsearchIndexWriter implements IndexWriter {
 
     private ClientFactory clientFactory;
+
+    private static final Log _log = LogFactoryUtil.getLog(ElasticsearchIndexWriter.class);
+
 
     @Override
     public void addDocument(SearchContext searchContext, Document document)
