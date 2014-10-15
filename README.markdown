@@ -3,21 +3,20 @@
 
 
 ### How to use this plugin?
-1) Download the Elasticray source from [here](https://github.com/R-Knowsys/elasticray/archive/master.zip) and deploy the plugin in your Liferay installation.
+1) Install Elastic search server first. Ensure Java is installed in your machine.
+	a) Download the latest version from here:
+http://www.elasticsearch.org/download/
+	b) Based on the OS, you can use the corresponding file. For windows get the zip file and unzip to a folder say ES_INSTALL_DIR
+	c) Run elasticsearch.bat (if in windows) from ES_INSTALL_DIR/bin
+2) Add the following lines to the portal-ext.properties file which point to the correct ip address and port of elastic search server. Restart liferay.
 
-2) Configure Elasticsearch server URL in elasticsearch-spring.xml
-	Go to "webapps\elastic-web\WEB-INF\classes\META-INF\elasticsearch-spring.xml". 
-	Modify the following lines to the correct Elasticsearch server. Change serverIP and port to the required values.
-	Change Properties as required.
- 
-	    <bean id="com.rknowsys.portal.search.elastic.client.ClientFactory" 	 class="com.rknowsys.portal.search.elastic.client.ClientFactoryImpl">
-	       <property name="port" value="9300"/>
-	       <property name="serverIP" value="127.0.0.1"/>
-	       <property name="properties">
-	            <props>
-	                <prop key="cluster.name">elasticsearch</prop>
-	            </props>
-	       </property>
+	elasticsearch.serverIP=127.0.0.1
+	elasticsearch.portNumber=9300
+	elasticsearch.cluster.name=elasticsearch
+
+3) Download the Elasticray source from [here](https://github.com/R-Knowsys/elasticray/archive/master.zip) and deploy the plugin in your Liferay installation.
+
+4) Once the installation is done, Do a "Reindex all search indexes" on from control panel -> Server Administration
 	
 
 ### Development Status
