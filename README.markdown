@@ -1,6 +1,7 @@
 ## Elasticray
 #####Free and Open Source Liferay Web Plugin for Elasticsearch(the flexible and powerful open source, distributed, real-time search and analytics engine). 
 
+License: This is released under the GNU-AGPL (Affero General Public License)
 
 ### How to use this plugin?
 1) Install Elastic search server first. Ensure Java is installed in your machine.
