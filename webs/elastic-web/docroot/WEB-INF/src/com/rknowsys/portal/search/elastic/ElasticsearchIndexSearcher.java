@@ -227,8 +227,13 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             return;
         }
         for (Sort sort : sorts) {
-            SortBuilder sortBuilder = SortBuilders.fieldSort(sort.getFieldName()).ignoreUnmapped(true)
-                    .order(sort.isReverse() ? SortOrder.DESC : SortOrder.ASC);
+            SortBuilder sortBuilder = null;
+            if (sort.getType() == Sort.SCORE_TYPE) {
+                sortBuilder = SortBuilders.scoreSort();
+            } else {
+                 sortBuilder = SortBuilders.fieldSort(sort.getFieldName()+"_sortable").ignoreUnmapped(true)
+                         .order(sort.isReverse() ? SortOrder.DESC : SortOrder.ASC);
+            }
             searchRequestBuilder.addSort(sortBuilder);
 
         }

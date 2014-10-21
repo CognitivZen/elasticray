@@ -1,13 +1,11 @@
 package com.rknowsys.portal.search.elastic.client;
 
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
 import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.cluster.metadata.IndexTemplateMetaData;
@@ -19,6 +17,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.security.MessageDigest;
 import java.util.Properties;
 
 /**
@@ -78,18 +77,22 @@ public class ClientFactoryImpl implements ClientFactory {
             String line = br.readLine();
 
             while (line != null) {
-                sb.append(line);
-                sb.append("\n");
+                sb.append(line.trim());
                 line = br.readLine();
             }
-            JSONObject jsonObect = JSONFactoryUtil.createJSONObject(sb.toString());
-            String newVersion = jsonObect.getString("version");
-            if (cont || newVersion.compareTo(version) > 0) {
-                JSONObject template = jsonObect.getJSONObject("template");
+            byte[] tempBytes = sb.toString().getBytes();
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] array = md.digest(tempBytes);
+            StringBuilder sb2 = new StringBuilder();
+            for (byte b : array) {
+                sb2.append(Integer.toHexString((b & 0xFF) | 0x100).substring(1, 3));
+            }
+            String newVersion = sb2.toString();
+            if (cont || !newVersion.equals(version)) {
                 if (exists) {
                     client.admin().indices().prepareDeleteTemplate(Liferay_Template + "*").execute().actionGet();
                 }
-                client.admin().indices().preparePutTemplate(Liferay_Template + "_" + newVersion).setSource(template.toString()).execute().actionGet();
+                client.admin().indices().preparePutTemplate(Liferay_Template + "_" + newVersion).setSource(sb.toString()).execute().actionGet();
 
                 client.admin().indices().prepareDelete("liferay_*").execute().actionGet();
 
