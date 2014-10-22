@@ -52,6 +52,8 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             addFacetCollectorsToSearch(searchContext, searchRequestBuilder);
 
             addSortToSearch(searchContext.getSorts(), searchRequestBuilder);
+            
+            searchRequestBuilder.setFrom(searchContext.getStart()).setSize(searchContext.getEnd());
 
             SearchRequest searchRequest = searchRequestBuilder.request();
 
@@ -95,6 +97,8 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
             addSortToSearch(sort, searchRequestBuilder);
 
+            searchRequestBuilder.setFrom(start).setSize(end);
+            
             SearchRequest searchRequest = searchRequestBuilder.request();
 
             ActionFuture<SearchResponse> future = client.search(searchRequest);
