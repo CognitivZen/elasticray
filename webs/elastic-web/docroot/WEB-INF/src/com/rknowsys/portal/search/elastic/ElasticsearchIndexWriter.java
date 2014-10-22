@@ -8,6 +8,7 @@ import java.util.concurrent.Future;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
@@ -263,11 +264,47 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             String name = field.getName();
 
             if (!field.isLocalized()) {
-                for (String value : field.getValues()) {
-                    if (Validator.isNull(value)) {
-                        continue;
+
+                if (field.isNumeric()) {
+                    Class clazz = field.getNumericClass();
+                    if (clazz.equals(Double.class)) {
+                        double[] values = GetterUtil.getDoubleValues(field.getValues());
+                        if (values.length > 1) {
+                            xContentBuilder.field(name, values);
+                        } else {
+                            xContentBuilder.field(name,values[0]);
+                        }
                     }
-                    xContentBuilder.field(name, value.trim());
+                    else if (clazz.equals(Float.class)) {
+                        float[] values = GetterUtil.getFloatValues(field.getValues());
+                        if (values.length > 1) {
+                            xContentBuilder.field(name, values);
+                        } else {
+                            xContentBuilder.field(name,values[0]);
+                        }
+                    }
+                    else if (clazz.equals(Integer.class)) {
+                        int[] values = GetterUtil.getIntegerValues(field.getValues());
+                        if (values.length > 1) {
+                            xContentBuilder.field(name, values);
+                        } else {
+                            xContentBuilder.field(name,values[0]);
+                        }
+                    } else {
+                        long[] values = GetterUtil.getLongValues(field.getValues());
+                        if (values.length > 1) {
+                            xContentBuilder.field(name, values);
+                        } else {
+                            xContentBuilder.field(name,values[0]);
+                        }
+                    }
+                } else {
+
+                    if (field.getValues().length > 1) {
+                        xContentBuilder.field(name, field.getValues());
+                    } else {
+                        xContentBuilder.field(name, field.getValue());
+                    }
                 }
             } else {
                 Map<Locale, String> localizedValues =

@@ -52,7 +52,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             addFacetCollectorsToSearch(searchContext, searchRequestBuilder);
 
             addSortToSearch(searchContext.getSorts(), searchRequestBuilder);
-            
+
             searchRequestBuilder.setFrom(searchContext.getStart()).setSize(searchContext.getEnd());
 
             SearchRequest searchRequest = searchRequestBuilder.request();
@@ -98,7 +98,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             addSortToSearch(sort, searchRequestBuilder);
 
             searchRequestBuilder.setFrom(start).setSize(end);
-            
+
             SearchRequest searchRequest = searchRequestBuilder.request();
 
             ActionFuture<SearchResponse> future = client.search(searchRequest);
@@ -148,13 +148,20 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         for (String fieldName :
                 source.keySet()) {
 
-            String val = (String) source.get(fieldName);
-            Field field = new Field(
-                    fieldName,
-                    new String[]{val}
-            );
+            Object val = source.get(fieldName);
+            if (val == null) {
+                Field field = new Field(fieldName,(String)null);
+                document.add(field);
+            } else if (val instanceof List) {
+                String[] values = ((List<String>) val).toArray(new String[((List<String>) val).size()]);
+                Field field = new Field(fieldName,values);
+                document.add(field);
+            } else {
+                Field field = new Field(fieldName,new String[]{val.toString()});
+                document.add(field);
+            }
 
-            document.add(field);
+
 
         }
 

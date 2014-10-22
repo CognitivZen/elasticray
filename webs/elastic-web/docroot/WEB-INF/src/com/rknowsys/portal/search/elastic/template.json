@@ -56,6 +56,15 @@
                     }
                 },
                 {
+                    "sortable" : {
+                        "match" : "*_sortable",
+                        "mapping" : {
+                            "index": "not_analyzed",
+                            "type" : "{dynamic_type}"
+                        }
+                    }
+                },
+                {
                     "ar": {
                         "match": "*_ar*",
                         "match_mapping_type": "string",
