@@ -1,3 +1,4 @@
+![Elasticray](https://github.com/R-Knowsys/elasticray/blob/master/elasticray-icon.png)
 ## Elasticray
 #####Free and Open Source Liferay Web Plugin for Elasticsearch(the flexible and powerful open source, distributed, real-time search and analytics engine). 
 
