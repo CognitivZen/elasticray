@@ -1,5 +1,5 @@
-![Elasticray](https://github.com/R-Knowsys/elasticray/blob/master/elasticray-icon.png)
-## Elasticray
+![Elasticray](https://github.com/R-Knowsys/elasticray/blob/master/elasticray-logo.png)
+---
 #####Free and Open Source Liferay Web Plugin for Elasticsearch(the flexible and powerful open source, distributed, real-time search and analytics engine). 
 
 ### License: This is released under the GNU-AGPL (Affero General Public License)
@@ -24,3 +24,4 @@ http://www.elasticsearch.org/download/
 
 ### Development Status
 Development is complete and right now the plugin is under testing. It is been submitted to the Liferay Marketplace.
+![Elasticray](https://github.com/R-Knowsys/elasticray/blob/master/elasticray-icon.png)
