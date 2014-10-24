@@ -24,4 +24,4 @@ http://www.elasticsearch.org/download/
 
 ### Development Status
 Development is complete and right now the plugin is under testing. It is been submitted to the Liferay Marketplace.
-![Elasticray](https://github.com/R-Knowsys/elasticray/blob/master/elasticray-icon.png)
+
