@@ -1632,7 +1632,7 @@ Please find a solution that does not require portal-impl.jar.
 				</else>
 			</if>
 
-			<var name="plugin.full.version.default" value="${lp.version}.${plugin.version}${lp.version.file.suffix}" />
+			<var name="plugin.full.version.default" value="${plugin.version}${lp.version.file.suffix}" />
 
 			<var name="plugin.file.default" value="${sdk.dir}/dist/${plugin.name}-${plugin.full.version}.${plugin.packaging}" />
 			<var name="plugin.javadoc.file.default" value="${sdk.dir}/dist/${plugin.name}-${plugin.full.version}-javadoc.zip" />
