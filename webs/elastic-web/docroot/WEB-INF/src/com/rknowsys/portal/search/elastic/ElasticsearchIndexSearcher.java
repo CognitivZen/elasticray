@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 R-Knowsys Technologies 
+ * Copyright (c) 2014 R-Knowsys Technologies, http://www.rknowsys.com
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
@@ -60,7 +60,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
             searchRequestBuilder.setQuery(queryBuilder);
 
-            _log.info("Query String  " + queryBuilder.toString());
+            _log.debug("Query String  " + queryBuilder.toString());
 
             searchRequestBuilder.setTypes("documents");
 
@@ -104,7 +104,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
             QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
 
-            _log.info("Query String" + queryBuilder.toString());
+            _log.debug("Query String" + queryBuilder.toString());
 
             searchRequestBuilder.setQuery(queryBuilder);
 
