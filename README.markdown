@@ -21,6 +21,7 @@ http://www.elasticsearch.org/download/
 
 4) Once the installation is done, Do a "Reindex all search indexes" on from control panel -> Server Administration
 	
+Detailed and latest documentation available here: https://github.com/R-Knowsys/elasticray/wiki
 
 ### Development Status
 Development is complete and v1.0 is released. [Download Here](https://github.com/R-Knowsys/elasticray/releases/download/v1.0/elasticsearch-web-1.0.0.0.war) It is been submitted to the Liferay Marketplace.
