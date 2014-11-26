@@ -12,17 +12,9 @@
                     "type": "string",
                     "analyzer": "keyword"
                 },
-                "title": {
-                    "type": "string",
-                    "analyzer": "keyword"
-                },
                 "rootEntryClassName": {
                     "type": "string",
                     "index": "not_analyzed"
-                },
-                "url": {
-                    "type": "string",
-                    "analyzer": "keyword"
                 },
                 "modified": {
                     "type": "long"
