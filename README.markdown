@@ -1,6 +1,6 @@
 ![Elasticray](https://github.com/R-Knowsys/elasticray/blob/master/elasticray-logo.png)
 ---
-#####Free and Open Source Liferay Web Plugin for Elasticsearch(the flexible and powerful open source, distributed, real-time search and analytics engine). 
+###This app provides integration with Elasticsearch, the popular open source search server based on Apache Lucene.
 
 ### License: This is released under the GNU-AGPL (Affero General Public License)
 
@@ -21,7 +21,9 @@ http://www.elasticsearch.org/download/
 
 4) Once the installation is done, Do a "Reindex all search indexes" on from control panel -> Server Administration
 	
+### Detailed and latest documentation : 
+https://github.com/R-Knowsys/elasticray/wiki
 
 ### Development Status
-Development is complete and right now the plugin is under testing. It is been submitted to the Liferay Marketplace.
+Development is complete and v1.0 is released. [Download Here](https://github.com/R-Knowsys/elasticray/releases/download/v1.0/elasticsearch-web-1.0.0.0.war) It is been submitted to the Liferay Marketplace.
 
