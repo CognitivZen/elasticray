@@ -30,14 +30,11 @@ import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.deletebyquery.DeleteByQueryRequestBuilder;
 import org.elasticsearch.action.deletebyquery.DeleteByQueryResponse;
-import org.elasticsearch.action.index.IndexRequestBuilder;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.VersionType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 
@@ -62,12 +59,12 @@ public class ElasticsearchIndexWriter implements IndexWriter {
     public void addDocument(SearchContext searchContext, Document document)
             throws SearchException {
         try {
-            IndexRequestBuilder updateRequestBuilder =
+            UpdateRequestBuilder updateRequestBuilder =
                     getUpdateRequestBuilder(searchContext, document);
 
-            Future<IndexResponse> future = updateRequestBuilder.execute();
+            Future<UpdateResponse> future = updateRequestBuilder.execute();
 
-            IndexResponse updateResponse = future.get();
+            UpdateResponse updateResponse = future.get();
 
         } catch (Exception e) {
             throw new SearchException(
@@ -87,7 +84,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
 
             for (Document document : documents) {
-                IndexRequestBuilder updateRequestBuilder =
+                UpdateRequestBuilder updateRequestBuilder =
                         getUpdateRequestBuilder(searchContext, document);
 
                 bulkRequestBuilder.add(updateRequestBuilder);
@@ -188,12 +185,12 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             throws SearchException {
 
         try {
-            IndexRequestBuilder updateRequestBuilder =
+            UpdateRequestBuilder updateRequestBuilder =
                     getUpdateRequestBuilder(searchContext, document);
 
-            Future<IndexResponse> future = updateRequestBuilder.execute();
+            Future<UpdateResponse> future = updateRequestBuilder.execute();
 
-            IndexResponse updateResponse = future.get();
+            UpdateResponse updateResponse = future.get();
 
         } catch (Exception e) {
             throw new SearchException(
@@ -212,7 +209,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
 
             for (Document document : documents) {
-                IndexRequestBuilder updateRequestBuilder =
+                UpdateRequestBuilder updateRequestBuilder =
                         getUpdateRequestBuilder(
                                  searchContext, document);
 
@@ -360,25 +357,22 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         return xContentBuilder.string();
     }
 
-    private IndexRequestBuilder getUpdateRequestBuilder(
+    private UpdateRequestBuilder getUpdateRequestBuilder(
             SearchContext searchContext, Document document)
             throws IOException {
 
         Client client = getClient();
-        IndexRequestBuilder indexRequestBuilder = client.prepareIndex(
-                String.valueOf("liferay_" + searchContext.getCompanyId()), "documents").setId(document.getUID());
 
-
-        /*UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(
+        UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(
                 String.valueOf("liferay_" + searchContext.getCompanyId()), "documents",
                 document.getUID());
-*/
+
         String elasticSearchDocument = getElasticsearchDocument(document);
 
-        indexRequestBuilder.setSource(elasticSearchDocument);
-        //indexRequestBuilder.setDocAsUpsert(true);
+        updateRequestBuilder.setDoc(elasticSearchDocument);
+        updateRequestBuilder.setDocAsUpsert(true);
 
-        return indexRequestBuilder;
+        return updateRequestBuilder;
     }
 
 
