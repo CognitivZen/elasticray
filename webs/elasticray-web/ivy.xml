@@ -7,6 +7,6 @@
     <info module="elastic-web" organisation="com.rknowsys"/>
     <configurations defaultconfmapping="default"/>
     <dependencies>
-        <dependency org="org.elasticsearch" name="elasticsearch" rev="1.3.4"/>
+        <dependency org="org.elasticsearch" name="elasticsearch" rev="1.4.0"/>
     </dependencies>
 </ivy-module>

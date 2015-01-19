@@ -188,6 +188,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             throws SearchException {
 
         try {
+        	deleteDocument(searchContext, document.getUID());
             IndexRequestBuilder updateRequestBuilder =
                     getUpdateRequestBuilder(searchContext, document);
 
@@ -207,6 +208,9 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             throws SearchException {
 
         try {
+        	for (Document document : documents) {
+    			deleteDocument(searchContext, document.getUID());
+    		}
             Client client = getClient();
 
             BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
