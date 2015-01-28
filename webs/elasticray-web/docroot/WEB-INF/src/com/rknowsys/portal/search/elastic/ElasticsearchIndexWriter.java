@@ -62,16 +62,27 @@ public class ElasticsearchIndexWriter implements IndexWriter {
     public void addDocument(SearchContext searchContext, Document document)
             throws SearchException {
         try {
+        	_log.debug("Adding document with uid " + document.getUID());
             IndexRequestBuilder updateRequestBuilder =
                     getUpdateRequestBuilder(searchContext, document);
 
             Future<IndexResponse> future = updateRequestBuilder.execute();
 
             IndexResponse updateResponse = future.get();
+            
+//            if(_log.isDebugEnabled())
+//            	
+//            {
+//            	if(!updateResponse.isCreated())
+//            	{
+//            		_log.debug("Unable to find to add a document with uid " + document.getUID());
+//            	}
+//            }
 
         } catch (Exception e) {
+        	_log.debug("Unable to add document with uid " + document.getUID() + "with error: " +  e.getMessage());
             throw new SearchException(
-                    "Unable to update document " + document, e);
+                    "Unable to add document " + document.getUID(), e);
         }
 
     }
@@ -82,24 +93,44 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             throws SearchException {
 
         try {
-            Client client = getClient();
-
-            BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
-
-            for (Document document : documents) {
-                IndexRequestBuilder updateRequestBuilder =
-                        getUpdateRequestBuilder(searchContext, document);
-
-                bulkRequestBuilder.add(updateRequestBuilder);
-            }
-
-            Future<BulkResponse> future = bulkRequestBuilder.execute();
-
-            BulkResponse bulkResponse = future.get();
+      	for (Document document : documents) {
+        		
+        		try
+        		{
+        			//Sending each document for indexing instead of bulkRequest. Need to change to use BulkProcessor in a future release
+    			   addDocument(searchContext, document);
+        		}
+        		catch(Exception e)
+        		{
+        			//ignore
+        		}
+    		}
+        	
+//            Client client = getClient();
+//
+//            BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
+//
+//            for (Document document : documents) {
+//            	_log.debug("Adding document to bulk add with uid:  " + document.getUID());
+//                IndexRequestBuilder updateRequestBuilder =
+//                        getUpdateRequestBuilder(searchContext, document);
+//
+//                bulkRequestBuilder.add(updateRequestBuilder);
+//            }
+//            _log.debug("Number of documents added to bulkRequest in addDocuments : " + bulkRequestBuilder.numberOfActions() );
+//
+//            //Future<BulkResponse> future = bulkRequestBuilder.execute();
+//
+//            BulkResponse bulkResponse =  bulkRequestBuilder.execute().actionGet();
+//            if(bulkResponse.hasFailures())
+//            {
+//            	_log.debug("Bulk Request failure error in addDocuments: " + bulkResponse.buildFailureMessage() );
+//            }
 
         } catch (Exception e) {
+        	_log.debug("Unable to add documents " + documents + "with error: " +  e.getMessage());
             throw new SearchException(
-                    "Unable to update documents " + documents, e);
+                    "Unable to add documents " + documents, e);
         }
 
     }
@@ -118,6 +149,14 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             Future<DeleteResponse> future = deleteRequestBuilder.execute();
 
             DeleteResponse deleteResponse = future.get();
+            
+//            if(_log.isDebugEnabled())
+//            {
+//            	if(!deleteResponse.isFound())
+//            	{
+//            		_log.debug("Unable to find the document with uid " + uid);
+//            	}
+//            }
 
         } catch (Exception e) {
             throw new SearchException("Unable to delete document " + uid, e);
@@ -146,6 +185,13 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             Future<BulkResponse> future = bulkRequestBuilder.execute();
 
             BulkResponse bulkResponse = future.get();
+            if(_log.isDebugEnabled())
+            {
+            	if(bulkResponse.hasFailures())
+            	{
+            		_log.debug("Errors while doing bulk delete with errors " + bulkResponse.buildFailureMessage() );
+            	}
+            }
 
         } catch (Exception e) {
             throw new SearchException("Unable to delete documents " + uids, e);
@@ -175,6 +221,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
                     deleteByQueryRequestBuilder.execute();
 
             DeleteByQueryResponse deleteByQueryResponse = future.get();
+        
 
         } catch (Exception e) {
             throw new SearchException(
@@ -188,6 +235,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             throws SearchException {
 
         try {
+        	_log.debug("Updating document with uid " + document.getUID());
         	deleteDocument(searchContext, document.getUID());
             IndexRequestBuilder updateRequestBuilder =
                     getUpdateRequestBuilder(searchContext, document);
@@ -197,8 +245,10 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             IndexResponse updateResponse = future.get();
 
         } catch (Exception e) {
+        	_log.debug("Unable to update document with uid " + document.getUID() + "with error: " +  e.getMessage());
             throw new SearchException(
-                    "Unable to update document " + document, e);
+                    "Unable to update document " + document.getUID(), e);
+            
         }
     }
 
@@ -208,26 +258,57 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             throws SearchException {
 
         try {
+//        	for (Document document : documents) {
+//        		try
+//        		{
+//    			deleteDocument(searchContext, document.getUID());
+//        		}
+//        		catch(Exception e)
+//        		{
+//        			
+//        		}
+        		
+ //   		}
+        	
         	for (Document document : documents) {
-    			deleteDocument(searchContext, document.getUID());
+        		
+        		try
+        		{
+        			//Sending each document for indexing instead of bulkRequest. Need to change to use BulkProcessor in a future release
+    			updateDocument(searchContext, document);
+        		}
+        		catch(Exception e)
+        		{
+        			//ignore
+        		}
     		}
-            Client client = getClient();
-
-            BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
-
-            for (Document document : documents) {
-                IndexRequestBuilder updateRequestBuilder =
-                        getUpdateRequestBuilder(
-                                 searchContext, document);
-
-                bulkRequestBuilder.add(updateRequestBuilder);
-            }
-
-            Future<BulkResponse> future = bulkRequestBuilder.execute();
-
-            BulkResponse bulkResponse = future.get();
+//            Client client = getClient();
+            
+//            BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
+//
+//            for (Document document : documents) {
+//            	_log.debug("Adding document to bulk update with uid:  " + document.getUID());
+//                IndexRequestBuilder updateRequestBuilder =
+//                        getUpdateRequestBuilder(
+//                                 searchContext, document);
+//
+//                bulkRequestBuilder.add(updateRequestBuilder);
+//            }
+//            
+//            _log.debug("Number of documents added to bulkRequest in updateDocuments : " + bulkRequestBuilder.numberOfActions() );
+//
+//            //Future<BulkResponse> future = bulkRequestBuilder.execute();
+//
+//            BulkResponse bulkResponse = bulkRequestBuilder.execute().actionGet();
+//            
+//            _log.debug("Number of items indexed in bulkRequest: " + bulkResponse.getItems().length);
+//            if(bulkResponse.hasFailures())
+//            {
+//            	_log.debug("Bulk Request failure error: " + bulkResponse.buildFailureMessage() );
+//            }
 
         } catch (Exception e) {
+        	_log.debug("Unable to update documents " + documents + "with error: " +  e.getMessage());
             throw new SearchException(
                     "Unable to update documents " + documents, e);
         }
