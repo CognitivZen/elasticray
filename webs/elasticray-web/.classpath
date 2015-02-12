@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry excluding="**/.svn/**|.svn/" kind="src" path="docroot/WEB-INF/src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/elasticsearch-analysis-icu.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/elasticsearch-analysis-kuromoji.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/elasticsearch-analysis-smartcn.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/elasticsearch.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/icu4j.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/log4j-over-slf4j.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-analyzers-common.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-analyzers-icu.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-analyzers-kuromoji.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-analyzers-smartcn.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-codecs.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-core.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-grouping.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-highlighter.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-join.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-memory.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-misc.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-queries.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-queryparser.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-sandbox.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-spatial.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/lucene-suggest.jar"/>
+	<classpathentry kind="lib" path="docroot/WEB-INF/lib/spatial4j.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jst.server.core.container/com.liferay.ide.eclipse.server.tomcat.runtimeClasspathProvider/Liferay v6.2 CE (Tomcat 7)">
+		<attributes>
+			<attribute name="owner.project.facets" value="#system#;jst.web"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
+	<classpathentry kind="con" path="com.liferay.ide.eclipse.server.plugin.container/web">
+		<attributes>
+			<attribute name="org.eclipse.jst.component.nondependency" value=""/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/portal-trunk"/>
+	<classpathentry kind="output" path="docroot/WEB-INF/classes"/>
+</classpath>

@@ -28,9 +28,17 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.model.User;
+import com.liferay.portal.model.UserGroup;
+import com.liferay.portal.model.UserGroupGroupRole;
+import com.liferay.portal.model.UserGroupRole;
 import com.liferay.portal.security.permission.ActionKeys;
 import com.liferay.portal.security.permission.PermissionChecker;
 import com.liferay.portal.security.permission.PermissionThreadLocal;
+import com.liferay.portal.service.UserGroupGroupRoleLocalServiceUtil;
+import com.liferay.portal.service.UserGroupLocalServiceUtil;
+import com.liferay.portal.service.UserGroupRoleLocalServiceUtil;
+import com.liferay.portal.service.UserLocalServiceUtil;
 import com.rknowsys.portal.search.elastic.client.ClientFactory;
 import com.rknowsys.portal.search.elastic.facet.ElasticsearchFacetFieldCollector;
 import com.rknowsys.portal.search.elastic.facet.LiferayFacetParser;
@@ -65,11 +73,11 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
  
             int end = searchContext.getEnd();
             int start = searchContext.getStart();
-//            boolean isFilterSearch = isFilterSearch(searchContext);
-//            if(isFilterSearch)
-//            {
-//              return filterSearch(searchContext, query);
-//            }
+            boolean isFilterSearch = isFilterSearch(searchContext);
+            if(isFilterSearch)
+            {
+              return filterSearch(searchContext, query);
+            }
             
             return doSearch(searchContext, query, start, end);
         } catch (Exception e) {
@@ -156,117 +164,111 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 		return false;
 	}
 	
-	protected Hits filterSearch(SearchContext searchContext, Query query) {
+	private Hits filterSearch(SearchContext searchContext, Query query) {
 
         int end = searchContext.getEnd();
         int start = searchContext.getStart();
-        end = end - INDEX_FILTER_SEARCH_LIMIT;
-        int size = end - start;
+        end = end - INDEX_FILTER_SEARCH_LIMIT + 5;
         
         Hits hits = new HitsImpl();
+         
+        
          
 		if ((start < 0) || (start > end) || end < 0) {
 			return hits;
 		} 
         
-    	PermissionChecker permissionChecker =
-				PermissionThreadLocal.getPermissionChecker();
-        
-		List<Document> docs = new ArrayList<Document>();
-		List<Float> scores = new ArrayList<Float>();
-        int lStart = start;
-        int lEnd = end;
-		boolean isBreak = false;
-		float time = 0;
-		int includeDocsSize =0;
-		int excludeDocsSize = 0;
-		int totalResults = 0;
-		int ii=0;
-		
-		String paginationType = GetterUtil.getString(
-				searchContext.getAttribute("paginationType"), "more");
-
-		while(true)
-        {
-            Hits lHits = doSearch(searchContext, query, lStart,lEnd);
-            if(ii == 0)
-            {
-            	totalResults = lHits.getLength();
-            }
-            ii++;
-            time+= lHits.getSearchTime();
-         	
-         	Document[] documents = lHits.getDocs();
-			for (int i = 0; i < documents.length; i++) {
-				try {
-					Document document = documents[i];
-
-					String entryClassName = document.get(Field.ENTRY_CLASS_NAME);
-					long entryClassPK = GetterUtil.getLong(
-						document.get(Field.ENTRY_CLASS_PK));
-
-					Indexer indexer = IndexerRegistryUtil.getIndexer(
-						entryClassName);
-
-					if ((indexer.isFilterSearch() &&
-						 indexer.hasPermission(
-							 permissionChecker, entryClassName, entryClassPK,
-							 ActionKeys.VIEW)) ||
-						!indexer.isFilterSearch() ||
-						!indexer.isPermissionAware()) {
-
-						docs.add(document);
-						scores.add(lHits.score(i));
-						includeDocsSize++;
-					}
-					else {
-						excludeDocsSize++;
-					}
-				}
-				catch (Exception e) {
-					excludeDocsSize++;
-				}
-				if(includeDocsSize >= (size + 5))
-				{   isBreak = true;
-					break;
-				}
-			}
-			
-			if(isBreak)
-			{
-				break;
-			}
-			
-			lStart = lEnd;
-			lEnd = lStart + size;
-			if(lStart >= totalResults)
-			{
-				break;
-			}
-        }
-			
-
-//			int length = docs.size();
-
-//			if (hasMore) {
-//				length = documents.length - excludeDocsSize;
-//			}
-
-			hits.setLength(totalResults - excludeDocsSize);
-
-//			if ((start != QueryUtil.ALL_POS) && (end != QueryUtil.ALL_POS)) {
-//				if (end > length) {
-//					end = length;
-//				}
-//
-//				docs = docs.subList(start, end);
-//			}
-     		hits.setDocs(docs.toArray(new Document[docs.size()]));
-			hits.setScores(scores.toArray(new Float[scores.size()]));
-			hits.setSearchTime(time);
-			return hits;
+		if(query instanceof BaseBooleanQueryImpl)
+		{
+			addPermissionFields(searchContext, query);
 		}
+		return doSearch(searchContext, query, start,end);
+  
+   }
 
+	private void addPermissionFields(SearchContext searchContext, Query query)
+	{
+	    BaseBooleanQueryImpl booleanQuery = (BaseBooleanQueryImpl)query;
+		try
+		{
+		  long userId = searchContext.getUserId();
+		  User user = UserLocalServiceUtil.getUser(userId);
+		  
+		  long[] roleIds = user.getRoleIds();
+		  
+		  String str = "";
+		  for(int ii=0; ii< roleIds.length; ii++)
+		  {
+			  if(ii == roleIds.length - 1)
+			  {
+			      str = str + roleIds[ii] ;
+			  }
+			  else
+			  {
+				  str = str + roleIds[ii] + " OR ";
+			  }
+		  }
+		  
+		  if(str.length() > 0)
+		  {
+		   // booleanQuery.addRequiredTerm("roleId", str);
+		  }
+		  
+		  String strGrps="";
+		  
+	      List<UserGroupRole> userGroupRoles = UserGroupRoleLocalServiceUtil.getUserGroupRoles(userId);
+          int ll =0;
+          int grpSize = userGroupRoles.size();
+          for (UserGroupRole userGroupRole : userGroupRoles) {
+	    	  long groupId = userGroupRole.getGroupId();
+	    	  long roleId = userGroupRole.getRoleId();
+			  if(ll == grpSize -1 )
+			  {
+			    strGrps = strGrps + groupId + "-" + roleId;
+			  }
+			  else
+			  {
+				  strGrps = strGrps + groupId + "-" + roleId + " OR ";
+			  }
+			  ll++;
+	      }
+		  
+		  
+		  List<UserGroup> userGroupList = UserGroupLocalServiceUtil.getUserUserGroups(userId);
+		  for(int jj=0; jj< userGroupList.size(); jj++)
+		  {
+			  UserGroup userGroup = userGroupList.get(jj);
+			  long groupId= userGroup.getGroupId();
+			  
+			  List<UserGroupGroupRole> userGroupGroupRoles = UserGroupGroupRoleLocalServiceUtil.getUserGroupGroupRoles(userGroup.getUserGroupId());
+			  grpSize = userGroupGroupRoles.size();
+			  int kk=0;
+			  for(UserGroupGroupRole userGroupGroupRole : userGroupGroupRoles )
+			  {
+				  if(kk == grpSize -1 )
+				  {
+				    strGrps = strGrps + groupId + "-" + userGroupGroupRole.getRoleId();
+				  }
+				  else
+				  {
+					  strGrps = strGrps + groupId + "-" + userGroupGroupRole.getRoleId() + " OR ";
+				  }
+				  kk++;
+			  }
+			
+			  
+		  }
+		  if(strGrps.length() > 0)
+		  {
+		    booleanQuery.addRequiredTerm("groupRoleId", strGrps);
+		  }
+		
+		}
+		catch(Exception excp)
+		{
+			
+		}
+	}
 
     @Override
     public Hits search(String searchEngineId, long companyId, Query query, Sort[] sort, int start, int end) throws SearchException {
