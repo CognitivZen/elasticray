@@ -69,15 +69,6 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             Future<IndexResponse> future = updateRequestBuilder.execute();
 
             IndexResponse updateResponse = future.get();
-            
-//            if(_log.isDebugEnabled())
-//            	
-//            {
-//            	if(!updateResponse.isCreated())
-//            	{
-//            		_log.debug("Unable to find to add a document with uid " + document.getUID());
-//            	}
-//            }
 
         } catch (Exception e) {
         	_log.debug("Unable to add document with uid " + document.getUID() + "with error: " +  e.getMessage());
@@ -208,7 +199,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
             DeleteByQueryRequestBuilder deleteByQueryRequestBuilder =
                     client.prepareDeleteByQuery(
-                            String.valueOf(searchContext.getCompanyId()));
+                            String.valueOf("liferay_" + searchContext.getCompanyId()));
 
             BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
 
@@ -224,6 +215,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         
 
         } catch (Exception e) {
+        	_log.debug("Unable to delete portlet document with id " + portletId + "with error: " +  e.getMessage());
             throw new SearchException(
                     "Unable to delete data for portlet " + portletId, e);
         }

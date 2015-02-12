@@ -15,6 +15,7 @@
  *******************************************************************************/
 package com.rknowsys.portal.search.elastic;
 
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.*;
@@ -22,10 +23,18 @@ import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.search.facet.MultiValueFacet;
 import com.liferay.portal.kernel.search.facet.RangeFacet;
 import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.ActionKeys;
+import com.liferay.portal.security.permission.PermissionChecker;
+import com.liferay.portal.security.permission.PermissionThreadLocal;
 import com.rknowsys.portal.search.elastic.client.ClientFactory;
 import com.rknowsys.portal.search.elastic.facet.ElasticsearchFacetFieldCollector;
 import com.rknowsys.portal.search.elastic.facet.LiferayFacetParser;
+
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -47,50 +56,216 @@ import java.util.*;
 public class ElasticsearchIndexSearcher implements IndexSearcher {
 
     private ClientFactory clientFactory;
+    public static final int INDEX_FILTER_SEARCH_LIMIT = GetterUtil.getInteger(
+    		PropsUtil.get(PropsKeys.INDEX_FILTER_SEARCH_LIMIT));
 
     @Override
     public Hits search(SearchContext searchContext, Query query) throws SearchException {
         try {
-            Client client = getClient();
-
-            SearchRequestBuilder searchRequestBuilder = client.prepareSearch("liferay_" +
-                    String.valueOf(searchContext.getCompanyId()));
-
-            QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
-
-            searchRequestBuilder.setQuery(queryBuilder);
-
-            _log.debug("Query String  " + queryBuilder.toString());
-
-            searchRequestBuilder.setTypes("documents");
-
-            addFacetCollectorsToSearch(searchContext, searchRequestBuilder);
-
-            addSortToSearch(searchContext.getSorts(), searchRequestBuilder);
-
-            searchRequestBuilder.setFrom(searchContext.getStart()).setSize(searchContext.getEnd());
-
-            SearchRequest searchRequest = searchRequestBuilder.request();
-
-            ActionFuture<SearchResponse> future = client.search(searchRequest);
-
-            SearchResponse searchResponse = future.actionGet();
-
-            updateFacetCollectors(searchContext, searchResponse);
-
-            Hits hits = processSearchHits(
-                    searchResponse.getHits(), query.getQueryConfig());
-
-            hits.setQuery(query);
-
-            TimeValue timeValue = searchResponse.getTook();
-
-            hits.setSearchTime((float) timeValue.getSecondsFrac());
-            return hits;
+ 
+            int end = searchContext.getEnd();
+            int start = searchContext.getStart();
+//            boolean isFilterSearch = isFilterSearch(searchContext);
+//            if(isFilterSearch)
+//            {
+//              return filterSearch(searchContext, query);
+//            }
+            
+            return doSearch(searchContext, query, start, end);
         } catch (Exception e) {
             throw new SearchException(e);
         }
     }
+
+    private Hits doSearch(SearchContext searchContext, Query query, int start, int end)
+    {
+    	Client client = getClient();
+ 
+        SearchRequest searchRequest = prepareSearchBuilder(searchContext, query, client, start, end).request();
+        _log.debug("Search query String  " + searchRequest.toString());
+
+       // _log.debug("Time Before request to ES: " + System.currentTimeMillis());
+        ActionFuture<SearchResponse> future = client.search(searchRequest);
+
+        SearchResponse searchResponse = future.actionGet();
+
+       // _log.debug("Time After response from ES: " + System.currentTimeMillis());
+        updateFacetCollectors(searchContext, searchResponse);
+        
+       // _log.debug("Time After update collector: " + System.currentTimeMillis());
+
+        Hits hits = processSearchHits(
+                searchResponse.getHits(), query.getQueryConfig());
+        _log.debug("Total responseCount  " + searchResponse.getHits().getTotalHits());
+        
+       // _log.debug("Time After processSearchHits: " + System.currentTimeMillis());
+       
+        hits.setQuery(query);
+
+        TimeValue timeValue = searchResponse.getTook();
+
+        hits.setSearchTime((float) timeValue.getSecondsFrac());
+        return hits;
+    }
+    
+    private SearchRequestBuilder prepareSearchBuilder(SearchContext searchContext, Query query, Client client, int start, int end)
+    { 
+    	
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch("liferay_" +
+                String.valueOf(searchContext.getCompanyId()));
+
+        QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
+
+        searchRequestBuilder.setQuery(queryBuilder);
+
+        _log.debug("Query String" + queryBuilder.toString());
+
+        searchRequestBuilder.setTypes("documents");
+
+        addFacetCollectorsToSearch(searchContext, searchRequestBuilder);
+
+        addSortToSearch(searchContext.getSorts(), searchRequestBuilder);
+        
+    
+        int size = end - start;
+      
+        _log.debug("Search Start:  " + start + " Search Size: " + size);
+        
+        searchRequestBuilder.setFrom(start).setSize(size);
+        return searchRequestBuilder;
+    }
+    
+    
+	private boolean isFilterSearch(SearchContext searchContext) {
+		if (searchContext.getEntryClassNames() == null) {
+			return false;
+		}
+
+		for (String entryClassName : searchContext.getEntryClassNames()) {
+			Indexer indexer = IndexerRegistryUtil.getIndexer(entryClassName);
+
+			if (indexer == null) {
+				continue;
+			}
+
+			if (indexer.isFilterSearch()) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+	
+	protected Hits filterSearch(SearchContext searchContext, Query query) {
+
+        int end = searchContext.getEnd();
+        int start = searchContext.getStart();
+        end = end - INDEX_FILTER_SEARCH_LIMIT;
+        int size = end - start;
+        
+        Hits hits = new HitsImpl();
+         
+		if ((start < 0) || (start > end) || end < 0) {
+			return hits;
+		} 
+        
+    	PermissionChecker permissionChecker =
+				PermissionThreadLocal.getPermissionChecker();
+        
+		List<Document> docs = new ArrayList<Document>();
+		List<Float> scores = new ArrayList<Float>();
+        int lStart = start;
+        int lEnd = end;
+		boolean isBreak = false;
+		float time = 0;
+		int includeDocsSize =0;
+		int excludeDocsSize = 0;
+		int totalResults = 0;
+		int ii=0;
+		
+		String paginationType = GetterUtil.getString(
+				searchContext.getAttribute("paginationType"), "more");
+
+		while(true)
+        {
+            Hits lHits = doSearch(searchContext, query, lStart,lEnd);
+            if(ii == 0)
+            {
+            	totalResults = lHits.getLength();
+            }
+            ii++;
+            time+= lHits.getSearchTime();
+         	
+         	Document[] documents = lHits.getDocs();
+			for (int i = 0; i < documents.length; i++) {
+				try {
+					Document document = documents[i];
+
+					String entryClassName = document.get(Field.ENTRY_CLASS_NAME);
+					long entryClassPK = GetterUtil.getLong(
+						document.get(Field.ENTRY_CLASS_PK));
+
+					Indexer indexer = IndexerRegistryUtil.getIndexer(
+						entryClassName);
+
+					if ((indexer.isFilterSearch() &&
+						 indexer.hasPermission(
+							 permissionChecker, entryClassName, entryClassPK,
+							 ActionKeys.VIEW)) ||
+						!indexer.isFilterSearch() ||
+						!indexer.isPermissionAware()) {
+
+						docs.add(document);
+						scores.add(lHits.score(i));
+						includeDocsSize++;
+					}
+					else {
+						excludeDocsSize++;
+					}
+				}
+				catch (Exception e) {
+					excludeDocsSize++;
+				}
+				if(includeDocsSize >= (size + 5))
+				{   isBreak = true;
+					break;
+				}
+			}
+			
+			if(isBreak)
+			{
+				break;
+			}
+			
+			lStart = lEnd;
+			lEnd = lStart + size;
+			if(lStart >= totalResults)
+			{
+				break;
+			}
+        }
+			
+
+//			int length = docs.size();
+
+//			if (hasMore) {
+//				length = documents.length - excludeDocsSize;
+//			}
+
+			hits.setLength(totalResults - excludeDocsSize);
+
+//			if ((start != QueryUtil.ALL_POS) && (end != QueryUtil.ALL_POS)) {
+//				if (end > length) {
+//					end = length;
+//				}
+//
+//				docs = docs.subList(start, end);
+//			}
+     		hits.setDocs(docs.toArray(new Document[docs.size()]));
+			hits.setScores(scores.toArray(new Float[scores.size()]));
+			hits.setSearchTime(time);
+			return hits;
+		}
 
 
     @Override
@@ -111,10 +286,16 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             searchRequestBuilder.setTypes("documents");
 
             addSortToSearch(sort, searchRequestBuilder);
-
-            searchRequestBuilder.setFrom(start).setSize(end);
+            
+            
+            _log.debug("Search Start:  " + start + " Search End: " + end);
+            searchRequestBuilder.setFrom(start).setSize(end - start);
 
             SearchRequest searchRequest = searchRequestBuilder.request();
+            
+            _log.debug("Search query String  " + searchRequest.toString());
+            
+           
 
             ActionFuture<SearchResponse> future = client.search(searchRequest);
 
@@ -201,9 +382,25 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
                 scores.add(searchHit.getScore());
             }
         }
-
+        int totalHits = (int) searchHits.getTotalHits();
+        _log.debug("Total Hits: " + totalHits);
+//        if(isFilterSearch)
+//        {
+//	        int filled = documents.size();
+//	        _log.debug("Filled documents from search: " + filled);
+//	        
+//	        if(totalHits > filled)
+//	        {
+//	        	 _log.debug("Filling dummy for count: " + (totalHits-filled));
+//		        for(int ii=filled; ii<totalHits;ii++)
+//		        {
+//		          documents.add(new DocumentImpl());
+//		        }
+//	        }
+//        }
+        _log.debug("Total Documents size: " + documents.size());
         hits.setDocs(documents.toArray(new Document[documents.size()]));
-        hits.setLength((int) searchHits.getTotalHits());
+        hits.setLength(totalHits);
         hits.setQueryTerms(queryTerms.toArray(new String[queryTerms.size()]));
         hits.setScores(scores.toArray(new Float[scores.size()]));
 
@@ -225,11 +422,13 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             org.elasticsearch.search.facet.Facet elasticsearchFacet =
                     facets.facet(facet.getFieldName());
 
+            
             FacetCollector facetCollector =
                     new ElasticsearchFacetFieldCollector(elasticsearchFacet);
 
             facet.setFacetCollector(facetCollector);
         }
+        
     }
 
     private void addFacetCollectorsToSearch(SearchContext searchContext, SearchRequestBuilder searchRequestBuilder) {
