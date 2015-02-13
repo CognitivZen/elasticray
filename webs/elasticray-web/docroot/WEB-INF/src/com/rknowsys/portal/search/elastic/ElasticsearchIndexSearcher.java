@@ -23,9 +23,12 @@ import com.liferay.portal.kernel.search.facet.MultiValueFacet;
 import com.liferay.portal.kernel.search.facet.RangeFacet;
 import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.model.User;
 import com.liferay.portal.model.UserGroup;
 import com.liferay.portal.model.UserGroupGroupRole;
@@ -38,12 +41,12 @@ import com.rknowsys.portal.search.elastic.client.ClientFactory;
 import com.rknowsys.portal.search.elastic.facet.ElasticsearchFacetFieldCollector;
 import com.rknowsys.portal.search.elastic.facet.LiferayFacetParser;
 
-import org.apache.lucene.index.Term;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.text.Text;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -51,12 +54,15 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.facet.FacetBuilder;
 import org.elasticsearch.search.facet.Facets;
+import org.elasticsearch.search.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.apache.lucene.search.TermQuery;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ElasticsearchIndexSearcher implements IndexSearcher {
 
@@ -93,7 +99,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
        _log.debug("Time After response from ES: " + System.currentTimeMillis());
         updateFacetCollectors(searchContext, searchResponse);
         Hits hits = processSearchHits(
-                searchResponse.getHits(), query.getQueryConfig());
+                searchResponse, query.getQueryConfig());
         _log.debug("Total responseCount  " + searchResponse.getHits().getTotalHits());
        _log.debug("Time After processSearchHits: " + System.currentTimeMillis());
        
@@ -110,6 +116,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     	
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch("liferay_" +
                 String.valueOf(searchContext.getCompanyId()));
+        addHighlights(query, searchRequestBuilder); 
 
         QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
 
@@ -129,7 +136,29 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         _log.debug("Search Start:  " + start + " Search Size: " + size);
         
         searchRequestBuilder.setFrom(start).setSize(size);
+        
         return searchRequestBuilder;
+    }
+    
+    private void addHighlights(Query query, SearchRequestBuilder searchRequestBuilder)
+    {
+    	QueryConfig queryConfig = query.getQueryConfig();
+		if (queryConfig.isHighlightEnabled()) {
+			
+			String localizedContentName = DocumentImpl.getLocalizedName(
+				queryConfig.getLocale(), Field.CONTENT);
+
+			String localizedTitleName = DocumentImpl.getLocalizedName(
+				queryConfig.getLocale(), Field.TITLE);
+
+			int fragmentSize = queryConfig.getHighlightFragmentSize();
+			int numberOfFragments = queryConfig.getHighlightSnippetSize();
+			searchRequestBuilder.addHighlightedField( Field.CONTENT, fragmentSize, numberOfFragments);
+			searchRequestBuilder.addHighlightedField( Field.TITLE, fragmentSize, numberOfFragments);
+			searchRequestBuilder.addHighlightedField( localizedContentName, fragmentSize, numberOfFragments);
+			searchRequestBuilder.addHighlightedField( localizedTitleName, fragmentSize, numberOfFragments);
+			
+		}
     }
     
     
@@ -290,7 +319,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
 
             Hits hits = processSearchHits(
-                    searchResponse.getHits(), query.getQueryConfig());
+                    searchResponse, query.getQueryConfig());
 
             hits.setQuery(query);
 
@@ -349,14 +378,15 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     }
 
     protected Hits processSearchHits(
-            SearchHits searchHits, QueryConfig queryConfig) {
+            SearchResponse searchResponse, QueryConfig queryConfig) {
 
-        Hits hits = new HitsImpl();
-
+    	Hits hits = new HitsImpl();
         List<Document> documents = new ArrayList<Document>();
         Set<String> queryTerms = new HashSet<String>();
         List<Float> scores = new ArrayList<Float>();
-
+        List<String> snippets = new ArrayList<String>();
+        SearchHits searchHits = searchResponse.getHits();
+        
         if (searchHits.totalHits() > 0) {
             SearchHit[] searchHitsArray = searchHits.getHits();
 
@@ -364,6 +394,25 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
                 Document document = processSearchHit(searchHit);
                 documents.add(document);
                 scores.add(searchHit.getScore());
+          
+    			String snippet = StringPool.BLANK;
+
+    			if (queryConfig.isHighlightEnabled()) {
+    				snippet = getSnippet(
+    					searchHit, queryConfig, queryTerms,
+    					searchHit.highlightFields(), Field.CONTENT);
+
+    				if (Validator.isNull(snippet)) {
+    					snippet = getSnippet(
+    						searchHit, queryConfig, queryTerms,
+    						searchHit.highlightFields(), Field.TITLE);
+    				}
+
+    				if (Validator.isNotNull(snippet)) {
+    					snippets.add(snippet);
+    				}
+    			}
+
             }
         }
         int totalHits = (int) searchHits.getTotalHits();
@@ -373,9 +422,78 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         hits.setLength(totalHits);
         hits.setQueryTerms(queryTerms.toArray(new String[queryTerms.size()]));
         hits.setScores(scores.toArray(new Float[scores.size()]));
+        hits.setSnippets(snippets.toArray(new String[snippets.size()]));
 
         return hits;
     }
+    
+	protected String getSnippet(
+			SearchHit searchHit, QueryConfig queryConfig,
+			Set<String> queryTerms,
+			Map<String, HighlightField> highlights, String field) {
+
+			if (highlights == null) {
+				return StringPool.BLANK;
+			}
+
+			boolean localizedSearch = true;
+
+			String defaultLanguageId = LocaleUtil.toLanguageId(
+				LocaleUtil.getDefault());
+			String queryLanguageId = LocaleUtil.toLanguageId(
+				queryConfig.getLocale());
+
+			if (defaultLanguageId.equals(queryLanguageId)) {
+				localizedSearch = false;
+			}
+
+			if (localizedSearch) {
+				String localizedName = DocumentImpl.getLocalizedName(
+					queryConfig.getLocale(), field);
+
+				if (searchHit.fields().containsKey(localizedName)) {
+					field = localizedName;
+				}
+			}
+			HighlightField hField = highlights.get(field);
+			if(hField == null)
+			{
+				return StringPool.BLANK;
+			}
+
+			List<String> snippets = new ArrayList<String>();
+			Text[] txtArr  = hField.getFragments();
+			if(txtArr == null)
+			{
+				return StringPool.BLANK;
+			}
+			for(Text txt: txtArr)
+			{
+				snippets.add(txt.string());
+			}
+
+			String snippet = StringUtil.merge(snippets, "...");
+
+			if (Validator.isNotNull(snippet)) {
+				snippet = snippet + "...";
+			}
+			else {
+				snippet = StringPool.BLANK;
+			}
+
+			Pattern pattern = Pattern.compile("<em>(.*?)</em>");
+
+			Matcher matcher = pattern.matcher(snippet);
+
+			while (matcher.find()) {
+				queryTerms.add(matcher.group(1));
+			}
+
+			snippet = StringUtil.replace(snippet, "<em>", "");
+			snippet = StringUtil.replace(snippet, "</em>", "");
+
+			return snippet;
+		}
 
     protected void updateFacetCollectors(
             SearchContext searchContext, SearchResponse searchResponse) {
