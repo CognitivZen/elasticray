@@ -97,26 +97,6 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         		}
     		}
         	
-//            Client client = getClient();
-//
-//            BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
-//
-//            for (Document document : documents) {
-//            	_log.debug("Adding document to bulk add with uid:  " + document.getUID());
-//                IndexRequestBuilder updateRequestBuilder =
-//                        getUpdateRequestBuilder(searchContext, document);
-//
-//                bulkRequestBuilder.add(updateRequestBuilder);
-//            }
-//            _log.debug("Number of documents added to bulkRequest in addDocuments : " + bulkRequestBuilder.numberOfActions() );
-//
-//            //Future<BulkResponse> future = bulkRequestBuilder.execute();
-//
-//            BulkResponse bulkResponse =  bulkRequestBuilder.execute().actionGet();
-//            if(bulkResponse.hasFailures())
-//            {
-//            	_log.debug("Bulk Request failure error in addDocuments: " + bulkResponse.buildFailureMessage() );
-//            }
 
         } catch (Exception e) {
         	_log.debug("Unable to add documents " + documents + "with error: " +  e.getMessage());
@@ -141,14 +121,6 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
             DeleteResponse deleteResponse = future.get();
             
-//            if(_log.isDebugEnabled())
-//            {
-//            	if(!deleteResponse.isFound())
-//            	{
-//            		_log.debug("Unable to find the document with uid " + uid);
-//            	}
-//            }
-
         } catch (Exception e) {
             throw new SearchException("Unable to delete document " + uid, e);
         }
@@ -250,19 +222,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             throws SearchException {
 
         try {
-//        	for (Document document : documents) {
-//        		try
-//        		{
-//    			deleteDocument(searchContext, document.getUID());
-//        		}
-//        		catch(Exception e)
-//        		{
-//        			
-//        		}
-        		
- //   		}
-        	
-        	for (Document document : documents) {
+       	for (Document document : documents) {
         		
         		try
         		{
@@ -274,30 +234,6 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         			//ignore
         		}
     		}
-//            Client client = getClient();
-            
-//            BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
-//
-//            for (Document document : documents) {
-//            	_log.debug("Adding document to bulk update with uid:  " + document.getUID());
-//                IndexRequestBuilder updateRequestBuilder =
-//                        getUpdateRequestBuilder(
-//                                 searchContext, document);
-//
-//                bulkRequestBuilder.add(updateRequestBuilder);
-//            }
-//            
-//            _log.debug("Number of documents added to bulkRequest in updateDocuments : " + bulkRequestBuilder.numberOfActions() );
-//
-//            //Future<BulkResponse> future = bulkRequestBuilder.execute();
-//
-//            BulkResponse bulkResponse = bulkRequestBuilder.execute().actionGet();
-//            
-//            _log.debug("Number of items indexed in bulkRequest: " + bulkResponse.getItems().length);
-//            if(bulkResponse.hasFailures())
-//            {
-//            	_log.debug("Bulk Request failure error: " + bulkResponse.buildFailureMessage() );
-//            }
 
         } catch (Exception e) {
         	_log.debug("Unable to update documents " + documents + "with error: " +  e.getMessage());
@@ -446,15 +382,10 @@ public class ElasticsearchIndexWriter implements IndexWriter {
                 String.valueOf("liferay_" + searchContext.getCompanyId()), "documents").setId(document.getUID());
 
 
-        /*UpdateRequestBuilder updateRequestBuilder = client.prepareUpdate(
-                String.valueOf("liferay_" + searchContext.getCompanyId()), "documents",
-                document.getUID());
-*/
         String elasticSearchDocument = getElasticsearchDocument(document);
 
         indexRequestBuilder.setSource(elasticSearchDocument);
-        //indexRequestBuilder.setDocAsUpsert(true);
-
+        
         return indexRequestBuilder;
     }
 
