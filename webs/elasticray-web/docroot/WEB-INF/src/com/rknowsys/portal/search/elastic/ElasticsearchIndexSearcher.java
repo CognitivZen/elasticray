@@ -75,11 +75,12 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         try {
  	            int end = searchContext.getEnd();
 	            int start = searchContext.getStart();
-	            if( isFilterSearch(searchContext))
+	            /*if( isFilterSearch(searchContext))
 	            {
 	              return filterSearch(searchContext, query);
-	            }
-	            
+	            }*/
+                query = getPermissionQuery(searchContext,query);
+
 	            return doSearch(searchContext, query, start, end);
         } catch (Exception e) {
             throw new SearchException(e);
@@ -89,7 +90,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     private Hits doSearch(SearchContext searchContext, Query query, int start, int end)
     {
     	Client client = getClient();
- 
+
         SearchRequest searchRequest = prepareSearchBuilder(searchContext, query, client, start, end).request();
         _log.debug("Search query String  " + searchRequest.toString());
 
@@ -102,7 +103,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
                 searchResponse, query.getQueryConfig());
         _log.debug("Total responseCount  " + searchResponse.getHits().getTotalHits());
        _log.debug("Time After processSearchHits: " + System.currentTimeMillis());
-       
+
         hits.setQuery(query);
 
         TimeValue timeValue = searchResponse.getTook();
@@ -110,13 +111,29 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         hits.setSearchTime((float) timeValue.getSecondsFrac());
         return hits;
     }
-    
+
+    private Query getPermissionQuery(SearchContext searchContext, Query query) {
+        if (searchContext.getEntryClassNames() == null) {
+            return query;
+        }
+        for (String className : searchContext.getEntryClassNames()) {
+            Indexer indexer = IndexerRegistryUtil.getIndexer(className);
+            if (indexer != null) {
+                if (indexer.isFilterSearch() && indexer.isPermissionAware()) {
+                    SearchPermissionChecker searchPermissionChecker = SearchEngineUtil.getSearchPermissionChecker();
+                    query = searchPermissionChecker.getPermissionQuery(searchContext.getCompanyId(),searchContext.getGroupIds(),searchContext.getUserId(),className,query,searchContext);
+                }
+            }
+        }
+        return query;
+    }
+
     private SearchRequestBuilder prepareSearchBuilder(SearchContext searchContext, Query query, Client client, int start, int end)
-    { 
-    	
+    {
+
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch("liferay_" +
                 String.valueOf(searchContext.getCompanyId()));
-        addHighlights(query, searchRequestBuilder); 
+        addHighlights(query, searchRequestBuilder);
 
         QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
 
@@ -129,22 +146,22 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         addFacetCollectorsToSearch(searchContext, searchRequestBuilder);
 
         addSortToSearch(searchContext.getSorts(), searchRequestBuilder);
-        
-    
+
+
         int size = end - start;
-      
+
         _log.debug("Search Start:  " + start + " Search Size: " + size);
-        
+
         searchRequestBuilder.setFrom(start).setSize(size);
-        
+
         return searchRequestBuilder;
     }
-    
+
     private void addHighlights(Query query, SearchRequestBuilder searchRequestBuilder)
     {
     	QueryConfig queryConfig = query.getQueryConfig();
 		if (queryConfig.isHighlightEnabled()) {
-			
+
 			String localizedContentName = DocumentImpl.getLocalizedName(
 				queryConfig.getLocale(), Field.CONTENT);
 
@@ -157,12 +174,12 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 			searchRequestBuilder.addHighlightedField( Field.TITLE, fragmentSize, numberOfFragments);
 			searchRequestBuilder.addHighlightedField( localizedContentName, fragmentSize, numberOfFragments);
 			searchRequestBuilder.addHighlightedField( localizedTitleName, fragmentSize, numberOfFragments);
-			
+
 		}
     }
-    
-    
-	private boolean isFilterSearch(SearchContext searchContext) {
+
+
+	/*private boolean isFilterSearch(SearchContext searchContext) {
 		if (searchContext.getEntryClassNames() == null) {
 			return false;
 		}
@@ -180,34 +197,34 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 		}
 
 		return false;
-	}
-	
-	private Hits filterSearch(SearchContext searchContext, Query query) {
+	}*/
+
+	/*private Hits filterSearch(SearchContext searchContext, Query query) {
 
         int end = searchContext.getEnd();
         int start = searchContext.getStart();
         end = end - INDEX_FILTER_SEARCH_LIMIT + 5;
         if ((start < 0) || (start > end) || end < 0) {
 			return new HitsImpl();
-		} 
-		if(query instanceof BaseBooleanQueryImpl)
+		}
+        if(query instanceof BaseBooleanQueryImpl)
 		{
 			addPermissionFields(searchContext, query);
 		}
 		return doSearch(searchContext, query, start,end);
-   }
+   }*/
 
-	private void addPermissionFields(SearchContext searchContext, Query query)
+	/*private void addPermissionFields(SearchContext searchContext, Query query)
 	{
 	    BaseBooleanQueryImpl baseQuery = (BaseBooleanQueryImpl)query;
 	    BooleanQuery permissionQuery = BooleanQueryFactoryUtil.create(searchContext);
-	    
+
 	    try
 		{
 		  long userId = searchContext.getUserId();
 		  User user = UserLocalServiceUtil.getUser(userId);
 		  long[] roleIds = user.getRoleIds();
-		  
+
 		  StringBuilder strRoles = new StringBuilder();
 		  for(int ii=0; ii< roleIds.length; ii++)
 		  {
@@ -220,14 +237,14 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 				  strRoles.append(roleIds[ii] + " OR ");
 			  }
 		  }
-		  
+
 		  if(strRoles.toString().length() > 0)
 		  {
 			  permissionQuery.addTerm("roleId", strRoles.toString());
 		  }
-		  
+
 		  StringBuilder strGrps= new StringBuilder();
-		  
+
 	      List<UserGroupRole> userGroupRoles = UserGroupRoleLocalServiceUtil.getUserGroupRoles(userId);
           int ll =0;
           int grpSize = userGroupRoles.size();
@@ -244,13 +261,13 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 			  }
 			  ll++;
 	      }
-		  
+
 		  List<UserGroup> userGroupList = UserGroupLocalServiceUtil.getUserUserGroups(userId);
 		  for(int jj=0; jj< userGroupList.size(); jj++)
 		  {
 			  UserGroup userGroup = userGroupList.get(jj);
 			  long groupId= userGroup.getGroupId();
-			  
+
 			  List<UserGroupGroupRole> userGroupGroupRoles = UserGroupGroupRoleLocalServiceUtil.getUserGroupGroupRoles(userGroup.getUserGroupId());
 			  grpSize = userGroupGroupRoles.size();
 			  int kk=0;
@@ -271,18 +288,18 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 		  {
 			  permissionQuery.addTerm("groupRoleId", strGrps.toString());
 		  }
-		  
+
 		  if(strRoles.toString().length() > 0 || strGrps.toString().length() > 0)
 		  {
 			  baseQuery.add(permissionQuery, BooleanClauseOccur.MUST);
 		  }
-		
+
 		}
 		catch(Exception excp)
 		{
 			_log.debug("Exception while adding permissions " + excp.getMessage());
 		}
-	}
+	}*/
 
     @Override
     public Hits search(String searchEngineId, long companyId, Query query, Sort[] sort, int start, int end) throws SearchException {
@@ -302,16 +319,16 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             searchRequestBuilder.setTypes("documents");
 
             addSortToSearch(sort, searchRequestBuilder);
-            
-            
+
+
             _log.debug("Search Start:  " + start + " Search End: " + end);
             searchRequestBuilder.setFrom(start).setSize(end - start);
 
             SearchRequest searchRequest = searchRequestBuilder.request();
-            
+
             _log.debug("Search query String  " + searchRequest.toString());
-            
-           
+
+
 
             ActionFuture<SearchResponse> future = client.search(searchRequest);
 
@@ -386,7 +403,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         List<Float> scores = new ArrayList<Float>();
         List<String> snippets = new ArrayList<String>();
         SearchHits searchHits = searchResponse.getHits();
-        
+
         if (searchHits.totalHits() > 0) {
             SearchHit[] searchHitsArray = searchHits.getHits();
 
@@ -394,7 +411,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
                 Document document = processSearchHit(searchHit);
                 documents.add(document);
                 scores.add(searchHit.getScore());
-          
+
     			String snippet = StringPool.BLANK;
 
     			if (queryConfig.isHighlightEnabled()) {
@@ -426,7 +443,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
         return hits;
     }
-    
+
 	protected String getSnippet(
 			SearchHit searchHit, QueryConfig queryConfig,
 			Set<String> queryTerms,
@@ -510,13 +527,13 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             org.elasticsearch.search.facet.Facet elasticsearchFacet =
                     facets.facet(facet.getFieldName());
 
-            
+
             FacetCollector facetCollector =
                     new ElasticsearchFacetFieldCollector(elasticsearchFacet);
 
             facet.setFacetCollector(facetCollector);
         }
-        
+
     }
 
     private void addFacetCollectorsToSearch(SearchContext searchContext, SearchRequestBuilder searchRequestBuilder) {
