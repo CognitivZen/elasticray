@@ -22,25 +22,10 @@ import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.search.facet.MultiValueFacet;
 import com.liferay.portal.kernel.search.facet.RangeFacet;
 import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
-import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.PropsUtil;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.User;
-import com.liferay.portal.model.UserGroup;
-import com.liferay.portal.model.UserGroupGroupRole;
-import com.liferay.portal.model.UserGroupRole;
-import com.liferay.portal.service.UserGroupGroupRoleLocalServiceUtil;
-import com.liferay.portal.service.UserGroupLocalServiceUtil;
-import com.liferay.portal.service.UserGroupRoleLocalServiceUtil;
-import com.liferay.portal.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.util.*;
 import com.rknowsys.portal.search.elastic.client.ClientFactory;
 import com.rknowsys.portal.search.elastic.facet.ElasticsearchFacetFieldCollector;
 import com.rknowsys.portal.search.elastic.facet.LiferayFacetParser;
-
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -58,7 +43,6 @@ import org.elasticsearch.search.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
-import org.apache.lucene.search.TermQuery;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -68,41 +52,43 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
     private ClientFactory clientFactory;
     public static final int INDEX_FILTER_SEARCH_LIMIT = GetterUtil.getInteger(
-    		PropsUtil.get(PropsKeys.INDEX_FILTER_SEARCH_LIMIT));
+            PropsUtil.get(PropsKeys.INDEX_FILTER_SEARCH_LIMIT));
 
     @Override
     public Hits search(SearchContext searchContext, Query query) throws SearchException {
         try {
- 	            int end = searchContext.getEnd();
-	            int start = searchContext.getStart();
-	            /*if( isFilterSearch(searchContext))
-	            {
-	              return filterSearch(searchContext, query);
-	            }*/
-                query = getPermissionQuery(searchContext,query);
+            int end = searchContext.getEnd();
+            int start = searchContext.getStart();
+            if (isFilterSearch(searchContext)) {
+                //return filterSearch(searchContext, query);
+                end = end - INDEX_FILTER_SEARCH_LIMIT + 5;
+                if ((start < 0) || (start > end) || end < 0) {
+                    return new HitsImpl();
+                }
+            }
+            query = getPermissionQuery(searchContext, query);
 
-	            return doSearch(searchContext, query, start, end);
+            return doSearch(searchContext, query, start, end);
         } catch (Exception e) {
             throw new SearchException(e);
         }
     }
 
-    private Hits doSearch(SearchContext searchContext, Query query, int start, int end)
-    {
-    	Client client = getClient();
+    private Hits doSearch(SearchContext searchContext, Query query, int start, int end) {
+        Client client = getClient();
 
         SearchRequest searchRequest = prepareSearchBuilder(searchContext, query, client, start, end).request();
         _log.debug("Search query String  " + searchRequest.toString());
 
-       _log.debug("Time Before request to ES: " + System.currentTimeMillis());
+        _log.debug("Time Before request to ES: " + System.currentTimeMillis());
         ActionFuture<SearchResponse> future = client.search(searchRequest);
         SearchResponse searchResponse = future.actionGet();
-       _log.debug("Time After response from ES: " + System.currentTimeMillis());
+        _log.debug("Time After response from ES: " + System.currentTimeMillis());
         updateFacetCollectors(searchContext, searchResponse);
         Hits hits = processSearchHits(
                 searchResponse, query.getQueryConfig());
         _log.debug("Total responseCount  " + searchResponse.getHits().getTotalHits());
-       _log.debug("Time After processSearchHits: " + System.currentTimeMillis());
+        _log.debug("Time After processSearchHits: " + System.currentTimeMillis());
 
         hits.setQuery(query);
 
@@ -121,15 +107,14 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             if (indexer != null) {
                 if (indexer.isFilterSearch() && indexer.isPermissionAware()) {
                     SearchPermissionChecker searchPermissionChecker = SearchEngineUtil.getSearchPermissionChecker();
-                    query = searchPermissionChecker.getPermissionQuery(searchContext.getCompanyId(),searchContext.getGroupIds(),searchContext.getUserId(),className,query,searchContext);
+                    query = searchPermissionChecker.getPermissionQuery(searchContext.getCompanyId(), searchContext.getGroupIds(), searchContext.getUserId(), className, query, searchContext);
                 }
             }
         }
         return query;
     }
 
-    private SearchRequestBuilder prepareSearchBuilder(SearchContext searchContext, Query query, Client client, int start, int end)
-    {
+    private SearchRequestBuilder prepareSearchBuilder(SearchContext searchContext, Query query, Client client, int start, int end) {
 
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch("liferay_" +
                 String.valueOf(searchContext.getCompanyId()));
@@ -157,47 +142,46 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         return searchRequestBuilder;
     }
 
-    private void addHighlights(Query query, SearchRequestBuilder searchRequestBuilder)
-    {
-    	QueryConfig queryConfig = query.getQueryConfig();
-		if (queryConfig.isHighlightEnabled()) {
+    private void addHighlights(Query query, SearchRequestBuilder searchRequestBuilder) {
+        QueryConfig queryConfig = query.getQueryConfig();
+        if (queryConfig.isHighlightEnabled()) {
 
-			String localizedContentName = DocumentImpl.getLocalizedName(
-				queryConfig.getLocale(), Field.CONTENT);
+            String localizedContentName = DocumentImpl.getLocalizedName(
+                    queryConfig.getLocale(), Field.CONTENT);
 
-			String localizedTitleName = DocumentImpl.getLocalizedName(
-				queryConfig.getLocale(), Field.TITLE);
+            String localizedTitleName = DocumentImpl.getLocalizedName(
+                    queryConfig.getLocale(), Field.TITLE);
 
-			int fragmentSize = queryConfig.getHighlightFragmentSize();
-			int numberOfFragments = queryConfig.getHighlightSnippetSize();
-			searchRequestBuilder.addHighlightedField( Field.CONTENT, fragmentSize, numberOfFragments);
-			searchRequestBuilder.addHighlightedField( Field.TITLE, fragmentSize, numberOfFragments);
-			searchRequestBuilder.addHighlightedField( localizedContentName, fragmentSize, numberOfFragments);
-			searchRequestBuilder.addHighlightedField( localizedTitleName, fragmentSize, numberOfFragments);
+            int fragmentSize = queryConfig.getHighlightFragmentSize();
+            int numberOfFragments = queryConfig.getHighlightSnippetSize();
+            searchRequestBuilder.addHighlightedField(Field.CONTENT, fragmentSize, numberOfFragments);
+            searchRequestBuilder.addHighlightedField(Field.TITLE, fragmentSize, numberOfFragments);
+            searchRequestBuilder.addHighlightedField(localizedContentName, fragmentSize, numberOfFragments);
+            searchRequestBuilder.addHighlightedField(localizedTitleName, fragmentSize, numberOfFragments);
 
-		}
+        }
     }
 
 
-	/*private boolean isFilterSearch(SearchContext searchContext) {
-		if (searchContext.getEntryClassNames() == null) {
-			return false;
-		}
+    private boolean isFilterSearch(SearchContext searchContext) {
+        if (searchContext.getEntryClassNames() == null) {
+            return false;
+        }
 
-		for (String entryClassName : searchContext.getEntryClassNames()) {
-			Indexer indexer = IndexerRegistryUtil.getIndexer(entryClassName);
+        for (String entryClassName : searchContext.getEntryClassNames()) {
+            Indexer indexer = IndexerRegistryUtil.getIndexer(entryClassName);
 
-			if (indexer == null) {
-				continue;
-			}
+            if (indexer == null) {
+                continue;
+            }
 
-			if (indexer.isFilterSearch()) {
-				return true;
-			}
-		}
+            if (indexer.isFilterSearch()) {
+                return true;
+            }
+        }
 
-		return false;
-	}*/
+        return false;
+    }
 
 	/*private Hits filterSearch(SearchContext searchContext, Query query) {
 
@@ -215,7 +199,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
    }*/
 
 	/*private void addPermissionFields(SearchContext searchContext, Query query)
-	{
+    {
 	    BaseBooleanQueryImpl baseQuery = (BaseBooleanQueryImpl)query;
 	    BooleanQuery permissionQuery = BooleanQueryFactoryUtil.create(searchContext);
 
@@ -329,7 +313,6 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             _log.debug("Search query String  " + searchRequest.toString());
 
 
-
             ActionFuture<SearchResponse> future = client.search(searchRequest);
 
             SearchResponse searchResponse = future.actionGet();
@@ -379,14 +362,14 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
             Object val = source.get(fieldName);
             if (val == null) {
-                Field field = new Field(fieldName,(String)null);
+                Field field = new Field(fieldName, (String) null);
                 document.add(field);
             } else if (val instanceof List) {
                 String[] values = ((List<String>) val).toArray(new String[((List<String>) val).size()]);
-                Field field = new Field(fieldName,values);
+                Field field = new Field(fieldName, values);
                 document.add(field);
             } else {
-                Field field = new Field(fieldName,new String[]{val.toString()});
+                Field field = new Field(fieldName, new String[]{val.toString()});
                 document.add(field);
             }
         }
@@ -397,7 +380,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     protected Hits processSearchHits(
             SearchResponse searchResponse, QueryConfig queryConfig) {
 
-    	Hits hits = new HitsImpl();
+        Hits hits = new HitsImpl();
         List<Document> documents = new ArrayList<Document>();
         Set<String> queryTerms = new HashSet<String>();
         List<Float> scores = new ArrayList<Float>();
@@ -412,23 +395,23 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
                 documents.add(document);
                 scores.add(searchHit.getScore());
 
-    			String snippet = StringPool.BLANK;
+                String snippet = StringPool.BLANK;
 
-    			if (queryConfig.isHighlightEnabled()) {
-    				snippet = getSnippet(
-    					searchHit, queryConfig, queryTerms,
-    					searchHit.highlightFields(), Field.CONTENT);
+                if (queryConfig.isHighlightEnabled()) {
+                    snippet = getSnippet(
+                            searchHit, queryConfig, queryTerms,
+                            searchHit.highlightFields(), Field.CONTENT);
 
-    				if (Validator.isNull(snippet)) {
-    					snippet = getSnippet(
-    						searchHit, queryConfig, queryTerms,
-    						searchHit.highlightFields(), Field.TITLE);
-    				}
+                    if (Validator.isNull(snippet)) {
+                        snippet = getSnippet(
+                                searchHit, queryConfig, queryTerms,
+                                searchHit.highlightFields(), Field.TITLE);
+                    }
 
-    				if (Validator.isNotNull(snippet)) {
-    					snippets.add(snippet);
-    				}
-    			}
+                    if (Validator.isNotNull(snippet)) {
+                        snippets.add(snippet);
+                    }
+                }
 
             }
         }
@@ -444,73 +427,69 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         return hits;
     }
 
-	protected String getSnippet(
-			SearchHit searchHit, QueryConfig queryConfig,
-			Set<String> queryTerms,
-			Map<String, HighlightField> highlights, String field) {
+    protected String getSnippet(
+            SearchHit searchHit, QueryConfig queryConfig,
+            Set<String> queryTerms,
+            Map<String, HighlightField> highlights, String field) {
 
-			if (highlights == null) {
-				return StringPool.BLANK;
-			}
+        if (highlights == null) {
+            return StringPool.BLANK;
+        }
 
-			boolean localizedSearch = true;
+        boolean localizedSearch = true;
 
-			String defaultLanguageId = LocaleUtil.toLanguageId(
-				LocaleUtil.getDefault());
-			String queryLanguageId = LocaleUtil.toLanguageId(
-				queryConfig.getLocale());
+        String defaultLanguageId = LocaleUtil.toLanguageId(
+                LocaleUtil.getDefault());
+        String queryLanguageId = LocaleUtil.toLanguageId(
+                queryConfig.getLocale());
 
-			if (defaultLanguageId.equals(queryLanguageId)) {
-				localizedSearch = false;
-			}
+        if (defaultLanguageId.equals(queryLanguageId)) {
+            localizedSearch = false;
+        }
 
-			if (localizedSearch) {
-				String localizedName = DocumentImpl.getLocalizedName(
-					queryConfig.getLocale(), field);
+        if (localizedSearch) {
+            String localizedName = DocumentImpl.getLocalizedName(
+                    queryConfig.getLocale(), field);
 
-				if (searchHit.fields().containsKey(localizedName)) {
-					field = localizedName;
-				}
-			}
-			HighlightField hField = highlights.get(field);
-			if(hField == null)
-			{
-				return StringPool.BLANK;
-			}
+            if (searchHit.fields().containsKey(localizedName)) {
+                field = localizedName;
+            }
+        }
+        HighlightField hField = highlights.get(field);
+        if (hField == null) {
+            return StringPool.BLANK;
+        }
 
-			List<String> snippets = new ArrayList<String>();
-			Text[] txtArr  = hField.getFragments();
-			if(txtArr == null)
-			{
-				return StringPool.BLANK;
-			}
-			for(Text txt: txtArr)
-			{
-				snippets.add(txt.string());
-			}
+        List<String> snippets = new ArrayList<String>();
+        Text[] txtArr = hField.getFragments();
+        if (txtArr == null) {
+            return StringPool.BLANK;
+        }
+        for (Text txt : txtArr) {
+            snippets.add(txt.string());
+        }
 
-			String snippet = StringUtil.merge(snippets, "...");
+        String snippet = StringUtil.merge(snippets, "...");
 
-			if (Validator.isNotNull(snippet)) {
-				snippet = snippet + "...";
-			}
-			else {
-				snippet = StringPool.BLANK;
-			}
+        if (Validator.isNotNull(snippet)) {
+            snippet = snippet + "...";
+        } else {
+            snippet = StringPool.BLANK;
+        }
 
-			Pattern pattern = Pattern.compile("<em>(.*?)</em>");
+        Pattern pattern = Pattern.compile("<em>(.*?)</em>");
 
-			Matcher matcher = pattern.matcher(snippet);
+        Matcher matcher = pattern.matcher(snippet);
 
-			while (matcher.find()) {
-				queryTerms.add(matcher.group(1));
-			}
+        while (matcher.find()) {
+            queryTerms.add(matcher.group(1));
+        }
 
-			snippet = StringUtil.replace(snippet, "<em>", "");
-			snippet = StringUtil.replace(snippet, "</em>", "");
+        snippet = StringUtil.replace(snippet, "<em>", "");
+        snippet = StringUtil.replace(snippet, "</em>", "");
 
-			return snippet;
-		}
+        return snippet;
+    }
 
     protected void updateFacetCollectors(
             SearchContext searchContext, SearchResponse searchResponse) {
@@ -561,8 +540,8 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             if (sort.getType() == Sort.SCORE_TYPE) {
                 sortBuilder = SortBuilders.scoreSort();
             } else {
-                 sortBuilder = SortBuilders.fieldSort(sort.getFieldName()+"_sortable").ignoreUnmapped(true)
-                         .order(sort.isReverse() ? SortOrder.DESC : SortOrder.ASC);
+                sortBuilder = SortBuilders.fieldSort(sort.getFieldName() + "_sortable").ignoreUnmapped(true)
+                        .order(sort.isReverse() ? SortOrder.DESC : SortOrder.ASC);
             }
             searchRequestBuilder.addSort(sortBuilder);
 
