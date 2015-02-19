@@ -60,8 +60,10 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             int end = searchContext.getEnd();
             int start = searchContext.getStart();
             if (isFilterSearch(searchContext)) {
-                //return filterSearch(searchContext, query);
-                end = end - INDEX_FILTER_SEARCH_LIMIT + 5;
+                if(end > INDEX_FILTER_SEARCH_LIMIT)
+            	{
+                  end = end - INDEX_FILTER_SEARCH_LIMIT + 5;
+            	}
                 if ((start < 0) || (start > end) || end < 0) {
                     return new HitsImpl();
                 }
