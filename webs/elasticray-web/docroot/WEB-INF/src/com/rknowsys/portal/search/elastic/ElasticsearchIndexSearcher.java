@@ -534,7 +534,8 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     }
 
     private void addSortToSearch(Sort[] sorts, SearchRequestBuilder searchRequestBuilder) {
-        if (sorts == null) {
+    	searchRequestBuilder.addSort(SortBuilders.scoreSort());
+    	if (sorts == null) {
             return;
         }
         for (Sort sort : sorts) {
