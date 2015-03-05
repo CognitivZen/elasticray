@@ -12,18 +12,14 @@
                     "type": "string",
                     "analyzer": "keyword"
                 },
-                "title": {
-                    "type": "string",
-                    "analyzer": "keyword"
-                },
                 "rootEntryClassName": {
                     "type": "string",
                     "index": "not_analyzed"
                 },
-                "url": {
+                "emailAddress": {
                     "type": "string",
-                    "analyzer": "keyword"
-                },
+                    "index": "not_analyzed"
+                },     
                 "modified": {
                     "type": "long"
                 },

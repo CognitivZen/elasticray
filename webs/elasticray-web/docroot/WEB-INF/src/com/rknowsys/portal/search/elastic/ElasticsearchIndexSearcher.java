@@ -121,9 +121,9 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch("liferay_" +
                 String.valueOf(searchContext.getCompanyId()));
         addHighlights(query, searchRequestBuilder);
-
-        QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
-
+        //to take care of regex conversion by lucene 4.0 which ES uses; escaping all forward slashes
+        String q = query.toString().replaceAll("((?::|(?<!^)\\G)[^\\/\\s]*)(/)", "$1\\\\$2");
+        QueryBuilder queryBuilder = QueryBuilders.queryString(q);
         searchRequestBuilder.setQuery(queryBuilder);
 
         _log.debug("Query String" + queryBuilder.toString());
