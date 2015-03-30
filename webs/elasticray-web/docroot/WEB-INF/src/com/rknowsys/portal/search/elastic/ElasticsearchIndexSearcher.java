@@ -43,6 +43,7 @@ import org.elasticsearch.search.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
+import org.apache.lucene.util.Version;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -53,7 +54,9 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     private ClientFactory clientFactory;
     public static final int INDEX_FILTER_SEARCH_LIMIT = GetterUtil.getInteger(
             PropsUtil.get(PropsKeys.INDEX_FILTER_SEARCH_LIMIT));
-
+    public static final String ES_INDEX_NAME = GetterUtil.getString(
+            PropsUtil.get("elasticsearch.index.name"), "liferay");
+    
     @Override
     public Hits search(SearchContext searchContext, Query query) throws SearchException {
         try {
@@ -79,10 +82,11 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     private Hits doSearch(SearchContext searchContext, Query query, int start, int end) {
         Client client = getClient();
 
-        SearchRequest searchRequest = prepareSearchBuilder(searchContext, query, client, start, end).request();
-        _log.debug("Search query String  " + searchRequest.toString());
-
-        _log.debug("Time Before request to ES: " + System.currentTimeMillis());
+        SearchRequestBuilder searchRequestBuilder = prepareSearchBuilder(searchContext, query, client, start, end);
+        _log.debug("Current lucene version:  " + Version.LUCENE_CURRENT);
+        _log.debug("Search query String  " + searchRequestBuilder.toString());
+        SearchRequest searchRequest = searchRequestBuilder.request();
+         _log.debug("Time Before request to ES: " + System.currentTimeMillis());
         ActionFuture<SearchResponse> future = client.search(searchRequest);
         SearchResponse searchResponse = future.actionGet();
         _log.debug("Time After response from ES: " + System.currentTimeMillis());
@@ -91,11 +95,8 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
                 searchResponse, query.getQueryConfig());
         _log.debug("Total responseCount  " + searchResponse.getHits().getTotalHits());
         _log.debug("Time After processSearchHits: " + System.currentTimeMillis());
-
         hits.setQuery(query);
-
         TimeValue timeValue = searchResponse.getTook();
-
         hits.setSearchTime((float) timeValue.getSecondsFrac());
         return hits;
     }
@@ -117,30 +118,17 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     }
 
     private SearchRequestBuilder prepareSearchBuilder(SearchContext searchContext, Query query, Client client, int start, int end) {
-
-        SearchRequestBuilder searchRequestBuilder = client.prepareSearch("liferay_" +
-                String.valueOf(searchContext.getCompanyId()));
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(ES_INDEX_NAME);
         addHighlights(query, searchRequestBuilder);
-        //to take care of regex conversion by lucene 4.0 which ES uses; escaping all forward slashes
-        String q = query.toString().replaceAll("((?::|(?<!^)\\G)[^\\/\\s]*)(/)", "$1\\\\$2");
+        String q=applyCustomESRules(query.toString());
         QueryBuilder queryBuilder = QueryBuilders.queryString(q);
         searchRequestBuilder.setQuery(queryBuilder);
-
-        _log.debug("Query String" + queryBuilder.toString());
-
         searchRequestBuilder.setTypes("documents");
-
         addFacetCollectorsToSearch(searchContext, searchRequestBuilder);
-
         addSortToSearch(searchContext.getSorts(), searchRequestBuilder);
-
-
         int size = end - start;
-
         _log.debug("Search Start:  " + start + " Search Size: " + size);
-
         searchRequestBuilder.setFrom(start).setSize(size);
-
         return searchRequestBuilder;
     }
 
@@ -183,6 +171,22 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         }
 
         return false;
+    }
+    
+    private String applyCustomESRules(String q)
+    {
+    	//Place for any custom modifications 
+    	 //-1 causes double negatives and hence positive for orgId:1 and it fails for all wdAdmins
+        q = q.replaceAll("-organizationId:1", "organizationId:\\\\-1");
+        //replace treepath term as literals
+        q = q.replaceAll("treePath:\\*(.*?)\\*", "treePath:\"$1\"");
+        //groupRoleId should not be split
+        q = q.replaceAll("groupRoleId:(.*?)(\\s|\\)+)", "groupRoleId:\"$1\"$2");
+        
+        //to take care of regex conversion by lucene 4.0 which ES uses; escaping all forward slashes
+        //String q = query.toString().replaceAll("((?::|(?<!^)\\G)[^\\/\\s]*)(/)", "$1\\\\$2");
+        
+        return q;
     }
 
 	/*private Hits filterSearch(SearchContext searchContext, Query query) {
@@ -292,13 +296,10 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
         try {
             Client client = getClient();
-
-            SearchRequestBuilder searchRequestBuilder = client.prepareSearch("liferay_" +
-                    String.valueOf(companyId));
-
-            QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
-
-            _log.debug("Query String" + queryBuilder.toString());
+            SearchRequestBuilder searchRequestBuilder = client.prepareSearch(ES_INDEX_NAME);
+            String q=applyCustomESRules(query.toString());
+           
+            QueryBuilder queryBuilder = QueryBuilders.queryString(q);
 
             searchRequestBuilder.setQuery(queryBuilder);
 
@@ -309,6 +310,8 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
             _log.debug("Search Start:  " + start + " Search End: " + end);
             searchRequestBuilder.setFrom(start).setSize(end - start);
+            
+            _log.debug("Query String" + searchRequestBuilder.toString());
 
             SearchRequest searchRequest = searchRequestBuilder.request();
 
@@ -534,20 +537,44 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     }
 
     private void addSortToSearch(Sort[] sorts, SearchRequestBuilder searchRequestBuilder) {
-    	searchRequestBuilder.addSort(SortBuilders.scoreSort());
+    	String query = searchRequestBuilder.toString();
+    	if(query.contains("assetTagNames")) //term search
+    	{
+    		 //always adds score to the sort
+     	   searchRequestBuilder.addSort(SortBuilders.scoreSort());
+    	}
+    	else //empty search
+    	{
+           //no score needed
+    		if(query.contains("com.liferay.portal.model.Organization"))
+			{
+    			searchRequestBuilder.addSort(SortBuilders.fieldSort("name_sortable").ignoreUnmapped(true).order(SortOrder.ASC));
+			}
+    	}
     	if (sorts == null) {
+    		//for alphabetic order on orgs
+    		
             return;
         }
         for (Sort sort : sorts) {
+        	if (sort == null) {
+				continue;
+			}
+			String sortFieldName = sort.getFieldName();
             SortBuilder sortBuilder = null;
-            if (sort.getType() == Sort.SCORE_TYPE) {
-                sortBuilder = SortBuilders.scoreSort();
-            } else {
-                sortBuilder = SortBuilders.fieldSort(sort.getFieldName() + "_sortable").ignoreUnmapped(true)
+            
+			if (DocumentImpl.isSortableTextField(sortFieldName)) {
+				sortFieldName = DocumentImpl.getSortableFieldName(
+					sortFieldName);
+			}
+			if (Validator.isNull(sortFieldName) ||
+					!sortFieldName.endsWith("sortable")) {
+					continue;
+				}
+                sortBuilder = SortBuilders.fieldSort(sortFieldName).ignoreUnmapped(true)
                         .order(sort.isReverse() ? SortOrder.DESC : SortOrder.ASC);
-            }
-            searchRequestBuilder.addSort(sortBuilder);
-
+            
+                searchRequestBuilder.addSort(sortBuilder);
         }
     }
 

@@ -19,6 +19,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
+
 import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
@@ -26,12 +27,16 @@ import org.elasticsearch.cluster.metadata.IndexTemplateMetaData;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -59,12 +64,20 @@ public class ClientFactoryImpl implements ClientFactory {
         Properties properties = PropsUtil.getProperties("elasticsearch.", true);
 
         String serverIP = properties.getProperty("serverIP", "localhost");
+        List<String> servers= Arrays.asList(serverIP.split("\\s*,\\s*"));
         int port = GetterUtil.get(properties.getProperty("portNumber"), 9300);
+        
+        List<TransportAddress> transportAddresses = new ArrayList<TransportAddress>();
+        for (String server : servers) {
+            TransportAddress ta = new InetSocketTransportAddress(server, port);
+            transportAddresses.add(ta);
+        }
+        TransportAddress[] tas = transportAddresses.toArray(new TransportAddress[transportAddresses.size()]);
 
         Settings settings = ImmutableSettings.settingsBuilder().classLoader(ClientFactoryImpl.class.getClassLoader()).
                 put(properties).build();
 
-        client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(serverIP, port));
+        client = new TransportClient(settings).addTransportAddresses(tas);
 
         GetIndexTemplatesResponse gitr = client.admin().indices().prepareGetTemplates(Liferay_Template + "*").execute().actionGet();
         boolean cont = false;
