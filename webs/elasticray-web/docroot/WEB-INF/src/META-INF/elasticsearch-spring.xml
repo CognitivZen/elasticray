@@ -17,13 +17,38 @@
 		<property name="indexWriter" ref="com.rknowsys.portal.search.elastic.ElasticsearchIndexWriter" />
 		<property name="luceneBased" value="true" />
 		<property name="vendor" value="Elasticsearch" />
+        <!--<property name="booleanClauseFactory" ref="com.rknowsys.portal.search.elastic.liferay.BooleanClauseFactoryImpl" />
+        <property name="booleanQueryFactory" ref="com.rknowsys.portal.search.elastic.liferay.BooleanQueryFactoryImpl" />
+        <property name="termQueryFactory" ref="com.rknowsys.portal.search.elastic.liferay.TermQueryFactoryImpl"/>
+        <property name="termRangeQueryFactory" ref="com.rknowsys.portal.search.elastic.liferay.TermRangeQueryFactoryImpl" />-->
 	</bean>
+
+    <bean id="com.rknowsys.portal.search.elastic.liferay.BooleanClauseFactoryImpl" class="com.rknowsys.portal.search.elastic.liferay.BooleanClauseFactoryImpl"/>
+    <bean id="com.rknowsys.portal.search.elastic.liferay.BooleanQueryFactoryImpl" class="com.rknowsys.portal.search.elastic.liferay.BooleanQueryFactoryImpl">
+        <property name="wildcardSearchFields" ref="com.rknowsys.portal.search.elastic.liferay.WildcardSearchFields" />
+    </bean>
+    <bean id="com.rknowsys.portal.search.elastic.liferay.TermQueryFactoryImpl" class="com.rknowsys.portal.search.elastic.liferay.TermQueryFactoryImpl" />
+    <bean id="com.rknowsys.portal.search.elastic.liferay.TermRangeQueryFactoryImpl" class="com.rknowsys.portal.search.elastic.liferay.TermRangeQueryFactoryImpl" />
 	<bean id="com.rknowsys.portal.search.elastic.ElasticsearchIndexSearcher" class="com.rknowsys.portal.search.elastic.ElasticsearchIndexSearcher">
         <property name="clientFactory" ref="com.rknowsys.portal.search.elastic.client.ClientFactory" />
    	</bean>
 	<bean id="com.rknowsys.portal.search.elastic.ElasticsearchIndexWriter" class="com.rknowsys.portal.search.elastic.ElasticsearchIndexWriter" >
         <property name="clientFactory" ref="com.rknowsys.portal.search.elastic.client.ClientFactory"/>
 	</bean>
+    <bean id="com.rknowsys.portal.search.elastic.liferay.WildcardSearchFields" class="com.rknowsys.portal.search.elastic.liferay.WildcardSearchFields">
+        <constructor-arg>
+            <array>
+                <value>assetCategoryTitles(_.+)?</value>
+                <value>assetTagNames</value>
+                <value>emailAddress</value>
+                <value>license</value>
+                <value>path</value>
+                <value>tag</value>
+                <value>treePath</value>
+                <value>userName</value>
+            </array>
+        </constructor-arg>
+    </bean>
 
 
     <bean id="searchEngineConfigurator.elastic" class="com.liferay.portal.kernel.search.PluginSearchEngineConfigurator">

@@ -60,10 +60,9 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             int end = searchContext.getEnd();
             int start = searchContext.getStart();
             if (isFilterSearch(searchContext)) {
-                if(end > INDEX_FILTER_SEARCH_LIMIT)
-            	{
-                  end = end - INDEX_FILTER_SEARCH_LIMIT + 5;
-            	}
+                if (end > INDEX_FILTER_SEARCH_LIMIT) {
+                    end = end - INDEX_FILTER_SEARCH_LIMIT + 5;
+                }
                 if ((start < 0) || (start > end) || end < 0) {
                     return new HitsImpl();
                 }
@@ -121,8 +120,12 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch("liferay_" +
                 String.valueOf(searchContext.getCompanyId()));
         addHighlights(query, searchRequestBuilder);
+        QueryBuilder queryBuilder = com.rknowsys.portal.search.elastic.liferay.QueryTranslatorUtil.translate(query);
 
-        QueryBuilder queryBuilder = QueryBuilders.queryString(query.toString());
+        if (queryBuilder == null) {
+            queryBuilder = QueryBuilders.queryString(query.toString());
+        }
+
 
         searchRequestBuilder.setQuery(queryBuilder);
 
@@ -534,8 +537,8 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     }
 
     private void addSortToSearch(Sort[] sorts, SearchRequestBuilder searchRequestBuilder) {
-    	searchRequestBuilder.addSort(SortBuilders.scoreSort());
-    	if (sorts == null) {
+        searchRequestBuilder.addSort(SortBuilders.scoreSort());
+        if (sorts == null) {
             return;
         }
         for (Sort sort : sorts) {
