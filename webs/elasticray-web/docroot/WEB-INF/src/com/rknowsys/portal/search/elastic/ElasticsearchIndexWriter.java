@@ -16,7 +16,9 @@
 package com.rknowsys.portal.search.elastic;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -59,8 +61,8 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
     private static final Log _log = LogFactoryUtil.getLog(ElasticsearchIndexWriter.class);
     public static final String ES_INDEX_NAME = GetterUtil.getString(
-            PropsUtil.get("elasticsearch.index.name"), "liferay");
-
+            PropsUtil.get("elasticsearch.index.name"), "liferay_es");
+   
     @Override
     public void addDocument(SearchContext searchContext, Document document)
             throws SearchException {
@@ -117,7 +119,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             Client client = getClient();
 
             DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(
-                    ES_INDEX_NAME,
+                    ES_INDEX_NAME + "_" + searchContext.getCompanyId(),
                     "documents", uid);
 
             Future<DeleteResponse> future = deleteRequestBuilder.execute();
@@ -140,10 +142,10 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
 
             for (String uid : uids) {
-            	  DeleteRequestBuilder deleteRequestBuilder =
-                          client.prepareDelete(
-                                  ES_INDEX_NAME,
-                                  "documents", uid);
+                DeleteRequestBuilder deleteRequestBuilder =
+                        client.prepareDelete(
+                                ES_INDEX_NAME + "_" + searchContext.getCompanyId(),
+                                "documents", uid);
 
                 bulkRequestBuilder.add(deleteRequestBuilder);
             }
@@ -174,7 +176,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
             DeleteByQueryRequestBuilder deleteByQueryRequestBuilder =
                     client.prepareDeleteByQuery(
-                            ES_INDEX_NAME);
+                            ES_INDEX_NAME + "_" + searchContext.getCompanyId());
 
             BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
 
@@ -245,6 +247,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         }
     }
 
+    
     @Override
     public void clearQuerySuggestionDictionaryIndexes(
             SearchContext searchContext) {
@@ -275,6 +278,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
     @Override
     public void indexSpellCheckerDictionary(SearchContext searchContext) {
     }
+    
 
     public void setClientFactory(ClientFactory clientFactory) {
         this.clientFactory = clientFactory;
@@ -293,7 +297,6 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         xContentBuilder.startObject();
 
         Map<String, Field> fields = document.getFields();
-
         for (Field field : fields.values()) {
             String name = field.getName();
 
@@ -382,7 +385,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
         Client client = getClient();
         IndexRequestBuilder indexRequestBuilder = client.prepareIndex(
-                ES_INDEX_NAME, "documents").setId(document.getUID());
+                ES_INDEX_NAME + "_" + searchContext.getCompanyId(), "documents").setId(document.getUID());
 
 
         String elasticSearchDocument = getElasticsearchDocument(document);
@@ -392,6 +395,5 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         return indexRequestBuilder;
     }
 
-
-
+	
 }
