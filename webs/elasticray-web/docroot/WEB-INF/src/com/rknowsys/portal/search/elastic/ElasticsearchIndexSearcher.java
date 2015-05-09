@@ -121,7 +121,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     }
 
     private SearchRequestBuilder prepareSearchBuilder(SearchContext searchContext, Query query, Client client, int start, int end) {
-        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(ES_INDEX_NAME + "_" + searchContext.getCompanyId());
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(Utilities.getIndexName(searchContext));
         addHighlights(query, searchRequestBuilder);
         QueryBuilder queryBuilder = com.rknowsys.portal.search.elastic.liferay.QueryTranslatorUtil.translate(query);
 
@@ -230,8 +230,8 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             {
               searchRequestBuilder.setFrom(start).setSize(end - start);
             }
-            
-            
+
+
             _log.debug("Query String" + searchRequestBuilder.toString());
 
             SearchRequest searchRequest = searchRequestBuilder.request();
