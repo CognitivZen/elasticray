@@ -16,7 +16,9 @@
 package com.rknowsys.portal.search.elastic;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -244,6 +246,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         }
     }
 
+    
     @Override
     public void clearQuerySuggestionDictionaryIndexes(
             SearchContext searchContext) {
@@ -274,6 +277,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
     @Override
     public void indexSpellCheckerDictionary(SearchContext searchContext) {
     }
+    
 
     public void setClientFactory(ClientFactory clientFactory) {
         this.clientFactory = clientFactory;
@@ -292,7 +296,6 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         xContentBuilder.startObject();
 
         Map<String, Field> fields = document.getFields();
-
         for (Field field : fields.values()) {
             String name = field.getName();
 
@@ -391,6 +394,5 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         return indexRequestBuilder;
     }
 
-
-
+	
 }

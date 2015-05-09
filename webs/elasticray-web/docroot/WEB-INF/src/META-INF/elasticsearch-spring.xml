@@ -8,7 +8,7 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.0.xsd"
 >
-	<!--<bean class="com.liferay.portal.spring.context.PortletBeanFactoryPostProcessor" />-->
+	<bean class="com.liferay.portal.spring.context.PortletBeanFactoryPostProcessor" />
 
     <bean id="com.rknowsys.portal.search.elastic.client.ClientFactory" class="com.rknowsys.portal.search.elastic.client.ClientFactoryImpl" destroy-method="destroy"/>
     <bean id="com.rknowsys.portal.search.elastic.ElasticsearchEngineImpl" class="com.liferay.portal.kernel.search.BaseSearchEngine">

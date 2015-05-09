@@ -15,6 +15,7 @@
  *******************************************************************************/
 package com.rknowsys.portal.search.elastic;
 
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.*;
@@ -120,7 +121,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     }
 
     private SearchRequestBuilder prepareSearchBuilder(SearchContext searchContext, Query query, Client client, int start, int end) {
-        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(Utilities.getIndexName(searchContext));
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(ES_INDEX_NAME + "_" + searchContext.getCompanyId());
         addHighlights(query, searchRequestBuilder);
         QueryBuilder queryBuilder = com.rknowsys.portal.search.elastic.liferay.QueryTranslatorUtil.translate(query);
 
@@ -143,9 +144,10 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         int size = end - start;
 
         _log.debug("Search Start:  " + start + " Search Size: " + size);
-
-        searchRequestBuilder.setFrom(start).setSize(size);
-
+        if((start != QueryUtil.ALL_POS) && (end != QueryUtil.ALL_POS))
+        {
+          searchRequestBuilder.setFrom(start).setSize(size);
+        }
         return searchRequestBuilder;
     }
 
@@ -206,108 +208,6 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         return q;
     }
 
-	/*private Hits filterSearch(SearchContext searchContext, Query query) {
-
-        int end = searchContext.getEnd();
-        int start = searchContext.getStart();
-        end = end - INDEX_FILTER_SEARCH_LIMIT + 5;
-        if ((start < 0) || (start > end) || end < 0) {
-			return new HitsImpl();
-		}
-        if(query instanceof BaseBooleanQueryImpl)
-		{
-			addPermissionFields(searchContext, query);
-		}
-		return doSearch(searchContext, query, start,end);
-   }*/
-
-	/*private void addPermissionFields(SearchContext searchContext, Query query)
-    {
-	    BaseBooleanQueryImpl baseQuery = (BaseBooleanQueryImpl)query;
-	    BooleanQuery permissionQuery = BooleanQueryFactoryUtil.create(searchContext);
-
-	    try
-		{
-		  long userId = searchContext.getUserId();
-		  User user = UserLocalServiceUtil.getUser(userId);
-		  long[] roleIds = user.getRoleIds();
-
-		  StringBuilder strRoles = new StringBuilder();
-		  for(int ii=0; ii< roleIds.length; ii++)
-		  {
-			  if(ii == roleIds.length - 1)
-			  {
-				  strRoles.append(roleIds[ii]) ;
-			  }
-			  else
-			  {
-				  strRoles.append(roleIds[ii] + " OR ");
-			  }
-		  }
-
-		  if(strRoles.toString().length() > 0)
-		  {
-			  permissionQuery.addTerm("roleId", strRoles.toString());
-		  }
-
-		  StringBuilder strGrps= new StringBuilder();
-
-	      List<UserGroupRole> userGroupRoles = UserGroupRoleLocalServiceUtil.getUserGroupRoles(userId);
-          int ll =0;
-          int grpSize = userGroupRoles.size();
-          for (UserGroupRole userGroupRole : userGroupRoles) {
-	    	  long groupId = userGroupRole.getGroupId();
-	    	  long roleId = userGroupRole.getRoleId();
-			  if(ll == grpSize -1 )
-			  {
-			    strGrps.append(groupId + StringPool.DASH + roleId);
-			  }
-			  else
-			  {
-				  strGrps.append(groupId + StringPool.DASH + roleId + " OR ");
-			  }
-			  ll++;
-	      }
-
-		  List<UserGroup> userGroupList = UserGroupLocalServiceUtil.getUserUserGroups(userId);
-		  for(int jj=0; jj< userGroupList.size(); jj++)
-		  {
-			  UserGroup userGroup = userGroupList.get(jj);
-			  long groupId= userGroup.getGroupId();
-
-			  List<UserGroupGroupRole> userGroupGroupRoles = UserGroupGroupRoleLocalServiceUtil.getUserGroupGroupRoles(userGroup.getUserGroupId());
-			  grpSize = userGroupGroupRoles.size();
-			  int kk=0;
-			  for(UserGroupGroupRole userGroupGroupRole : userGroupGroupRoles )
-			  {
-				  if(kk == grpSize -1 )
-				  {
-				    strGrps.append(groupId + StringPool.DASH + userGroupGroupRole.getRoleId());
-				  }
-				  else
-				  {
-					  strGrps.append(groupId + StringPool.DASH + userGroupGroupRole.getRoleId() + " OR ");
-				  }
-				  kk++;
-			  }
-		  }
-		  if(strGrps.toString().length() > 0)
-		  {
-			  permissionQuery.addTerm("groupRoleId", strGrps.toString());
-		  }
-
-		  if(strRoles.toString().length() > 0 || strGrps.toString().length() > 0)
-		  {
-			  baseQuery.add(permissionQuery, BooleanClauseOccur.MUST);
-		  }
-
-		}
-		catch(Exception excp)
-		{
-			_log.debug("Exception while adding permissions " + excp.getMessage());
-		}
-	}*/
-
     @Override
     public Hits search(String searchEngineId, long companyId, Query query, Sort[] sort, int start, int end) throws SearchException {
 
@@ -326,7 +226,13 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
 
             _log.debug("Search Start:  " + start + " Search End: " + end);
-            searchRequestBuilder.setFrom(start).setSize(end - start);
+            if((start != QueryUtil.ALL_POS) && (end != QueryUtil.ALL_POS))
+            {
+              searchRequestBuilder.setFrom(start).setSize(end - start);
+            }
+            
+            
+            _log.debug("Query String" + searchRequestBuilder.toString());
 
             SearchRequest searchRequest = searchRequestBuilder.request();
 
@@ -602,6 +508,5 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     }
 
     private static final Log _log = LogFactoryUtil.getLog(ElasticsearchIndexSearcher.class);
-
 
 }
