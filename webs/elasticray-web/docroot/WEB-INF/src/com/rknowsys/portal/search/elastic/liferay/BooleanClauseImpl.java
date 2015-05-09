@@ -3,6 +3,7 @@
  *
  * $Id$
  */
+
 package com.rknowsys.portal.search.elastic.liferay;
 
 import com.liferay.portal.kernel.search.BooleanClause;
@@ -31,6 +32,6 @@ public class BooleanClauseImpl implements BooleanClause {
         return _query;
     }
 
-    private Query _query;
+    private Query              _query;
     private BooleanClauseOccur _booleanClauseOccur;
 }

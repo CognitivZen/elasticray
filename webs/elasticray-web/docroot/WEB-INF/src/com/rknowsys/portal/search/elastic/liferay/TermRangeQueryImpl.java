@@ -3,13 +3,13 @@
  *
  * $Id$
  */
+
 package com.rknowsys.portal.search.elastic.liferay;
 
-import com.liferay.portal.kernel.search.QueryConfig;
-import com.liferay.portal.kernel.search.TermRangeQuery;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.QueryParser;
 import org.elasticsearch.index.query.RangeQueryBuilder;
+
+import com.liferay.portal.kernel.search.TermRangeQuery;
 
 /**
  * //TODO Comment goes here
@@ -35,7 +35,6 @@ public class TermRangeQueryImpl extends QueryImpl implements TermRangeQuery {
         } else {
             _rangeQueryBuilder = _rangeQueryBuilder.gt(upperTerm.toLowerCase());
         }
-        QueryParser
     }
 
     @Override
@@ -70,13 +69,11 @@ public class TermRangeQueryImpl extends QueryImpl implements TermRangeQuery {
     }
 
 
-
-
-    private String _field;
-    private String _lowerTerm;
-    private String _upperTerm;
-    private boolean _includesLower;
-    private boolean _includesUpper;
+    private String            _field;
+    private String            _lowerTerm;
+    private String            _upperTerm;
+    private boolean           _includesLower;
+    private boolean           _includesUpper;
     private RangeQueryBuilder _rangeQueryBuilder;
 
 }
