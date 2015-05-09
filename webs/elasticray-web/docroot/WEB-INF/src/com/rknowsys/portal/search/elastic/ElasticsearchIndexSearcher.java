@@ -123,12 +123,12 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     private SearchRequestBuilder prepareSearchBuilder(SearchContext searchContext, Query query, Client client, int start, int end) {
         SearchRequestBuilder searchRequestBuilder = client.prepareSearch(Utilities.getIndexName(searchContext));
         addHighlights(query, searchRequestBuilder);
-        QueryBuilder queryBuilder = com.rknowsys.portal.search.elastic.liferay.QueryTranslatorUtil.translate(query);
+        //QueryBuilder queryBuilder = com.rknowsys.portal.search.elastic.liferay.QueryTranslatorUtil.translate(query);
 
-        if (queryBuilder == null) {
+        //if (queryBuilder == null) {
             String q=applyCustomESRules(query.toString());
-            queryBuilder = QueryBuilders.queryString(q);
-        }
+            QueryBuilder queryBuilder = QueryBuilders.queryString(q);
+        //}
 
         searchRequestBuilder.setQuery(queryBuilder);
 
