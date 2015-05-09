@@ -52,14 +52,13 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.rknowsys.portal.search.elastic.client.ClientFactory;
+import com.rknowsys.portal.search.elastic.util.Utilities;
 
 public class ElasticsearchIndexWriter implements IndexWriter {
 
     private ClientFactory clientFactory;
 
     private static final Log _log = LogFactoryUtil.getLog(ElasticsearchIndexWriter.class);
-    public static final String ES_INDEX_NAME = GetterUtil.getString(
-            PropsUtil.get("elasticsearch.index.name"), "liferay");
 
     @Override
     public void addDocument(SearchContext searchContext, Document document)
@@ -88,7 +87,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
         try {
       	for (Document document : documents) {
-        		
+
         		try
         		{
         			//Sending each document for indexing instead of bulkRequest. Need to change to use BulkProcessor in a future release
@@ -99,7 +98,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         			//ignore
         		}
     		}
-        	
+
 
         } catch (Exception e) {
         	_log.debug("Unable to add documents " + documents + "with error: " +  e.getMessage());
@@ -117,13 +116,13 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             Client client = getClient();
 
             DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(
-                    ES_INDEX_NAME,
+                    Utilities.getIndexName(searchContext),
                     "documents", uid);
 
             Future<DeleteResponse> future = deleteRequestBuilder.execute();
 
             DeleteResponse deleteResponse = future.get();
-            
+
         } catch (Exception e) {
             throw new SearchException("Unable to delete document " + uid, e);
         }
@@ -142,7 +141,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             for (String uid : uids) {
             	  DeleteRequestBuilder deleteRequestBuilder =
                           client.prepareDelete(
-                                  ES_INDEX_NAME,
+                                  Utilities.getIndexName(searchContext),
                                   "documents", uid);
 
                 bulkRequestBuilder.add(deleteRequestBuilder);
@@ -174,7 +173,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
             DeleteByQueryRequestBuilder deleteByQueryRequestBuilder =
                     client.prepareDeleteByQuery(
-                            ES_INDEX_NAME);
+                            Utilities.getIndexName(searchContext));
 
             BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
 
@@ -187,7 +186,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
                     deleteByQueryRequestBuilder.execute();
 
             DeleteByQueryResponse deleteByQueryResponse = future.get();
-        
+
 
         } catch (Exception e) {
         	_log.debug("Unable to delete portlet document with id " + portletId + "with error: " +  e.getMessage());
@@ -215,7 +214,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         	_log.debug("Unable to update document with uid " + document.getUID() + "with error: " +  e.getMessage());
             throw new SearchException(
                     "Unable to update document " + document.getUID(), e);
-            
+
         }
     }
 
@@ -226,7 +225,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
         try {
        	for (Document document : documents) {
-        		
+
         		try
         		{
         			//Sending each document for indexing instead of bulkRequest. Need to change to use BulkProcessor in a future release
@@ -382,13 +381,13 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
         Client client = getClient();
         IndexRequestBuilder indexRequestBuilder = client.prepareIndex(
-                ES_INDEX_NAME, "documents").setId(document.getUID());
+                Utilities.getIndexName(searchContext), "documents").setId(document.getUID());
 
 
         String elasticSearchDocument = getElasticsearchDocument(document);
 
         indexRequestBuilder.setSource(elasticSearchDocument);
-        
+
         return indexRequestBuilder;
     }
 

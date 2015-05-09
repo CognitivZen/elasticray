@@ -26,6 +26,9 @@ import com.liferay.portal.kernel.util.*;
 import com.rknowsys.portal.search.elastic.client.ClientFactory;
 import com.rknowsys.portal.search.elastic.facet.ElasticsearchFacetFieldCollector;
 import com.rknowsys.portal.search.elastic.facet.LiferayFacetParser;
+import com.rknowsys.portal.search.elastic.util.Utilities;
+
+import org.apache.lucene.util.Version;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -51,10 +54,8 @@ import java.util.regex.Pattern;
 public class ElasticsearchIndexSearcher implements IndexSearcher {
 
     private ClientFactory clientFactory;
-    public static final int INDEX_FILTER_SEARCH_LIMIT = GetterUtil.getInteger(
+    public static final int    INDEX_FILTER_SEARCH_LIMIT = GetterUtil.getInteger(
             PropsUtil.get(PropsKeys.INDEX_FILTER_SEARCH_LIMIT));
-    public static final String ES_INDEX_NAME = GetterUtil.getString(
-            PropsUtil.get("elasticsearch.index.name"), "liferay");
 
     @Override
     public Hits search(SearchContext searchContext, Query query) throws SearchException {
@@ -62,10 +63,9 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             int end = searchContext.getEnd();
             int start = searchContext.getStart();
             if (isFilterSearch(searchContext)) {
-                if(end > INDEX_FILTER_SEARCH_LIMIT)
-            	{
-                  end = end - INDEX_FILTER_SEARCH_LIMIT + 5;
-            	}
+                if (end > INDEX_FILTER_SEARCH_LIMIT) {
+                    end = end - INDEX_FILTER_SEARCH_LIMIT + 5;
+                }
                 if ((start < 0) || (start > end) || end < 0) {
                     return new HitsImpl();
                 }
@@ -85,7 +85,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
         _log.debug("Current lucene version:  " + Version.LUCENE_CURRENT);
         _log.debug("Search query String  " + searchRequestBuilder.toString());
         SearchRequest searchRequest = searchRequestBuilder.request();
-         _log.debug("Time Before request to ES: " + System.currentTimeMillis());
+        _log.debug("Time Before request to ES: " + System.currentTimeMillis());
         ActionFuture<SearchResponse> future = client.search(searchRequest);
         SearchResponse searchResponse = future.actionGet();
         _log.debug("Time After response from ES: " + System.currentTimeMillis());
@@ -120,17 +120,15 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     }
 
     private SearchRequestBuilder prepareSearchBuilder(SearchContext searchContext, Query query, Client client, int start, int end) {
-        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(ES_INDEX_NAME);
+        SearchRequestBuilder searchRequestBuilder = client.prepareSearch(Utilities.getIndexName(searchContext));
         addHighlights(query, searchRequestBuilder);
         QueryBuilder queryBuilder = com.rknowsys.portal.search.elastic.liferay.QueryTranslatorUtil.translate(query);
 
         if (queryBuilder == null) {
-            queryBuilder = QueryBuilders.queryString(query.toString());
+            String q=applyCustomESRules(query.toString());
+            queryBuilder = QueryBuilders.queryString(q);
         }
 
-
-        String q=applyCustomESRules(query.toString());
-        QueryBuilder queryBuilder = QueryBuilders.queryString(q);
         searchRequestBuilder.setQuery(queryBuilder);
 
         _log.debug("Query String" + queryBuilder.toString());
@@ -315,7 +313,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
         try {
             Client client = getClient();
-            SearchRequestBuilder searchRequestBuilder = client.prepareSearch(ES_INDEX_NAME);
+            SearchRequestBuilder searchRequestBuilder = client.prepareSearch(Utilities.getIndexName(companyId));
             String q=applyCustomESRules(query.toString());
 
             QueryBuilder queryBuilder = QueryBuilders.queryString(q);
