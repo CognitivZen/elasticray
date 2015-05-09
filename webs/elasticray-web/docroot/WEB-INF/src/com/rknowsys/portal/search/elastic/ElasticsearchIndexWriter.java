@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
@@ -48,6 +49,7 @@ import com.liferay.portal.kernel.search.IndexWriter;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.rknowsys.portal.search.elastic.client.ClientFactory;
 
@@ -56,7 +58,8 @@ public class ElasticsearchIndexWriter implements IndexWriter {
     private ClientFactory clientFactory;
 
     private static final Log _log = LogFactoryUtil.getLog(ElasticsearchIndexWriter.class);
-
+    public static final String ES_INDEX_NAME = GetterUtil.getString(
+            PropsUtil.get("elasticsearch.index.name"), "liferay");
 
     @Override
     public void addDocument(SearchContext searchContext, Document document)
@@ -114,7 +117,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             Client client = getClient();
 
             DeleteRequestBuilder deleteRequestBuilder = client.prepareDelete(
-                    String.valueOf("liferay_" + searchContext.getCompanyId()),
+                    ES_INDEX_NAME,
                     "documents", uid);
 
             Future<DeleteResponse> future = deleteRequestBuilder.execute();
@@ -137,10 +140,10 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
 
             for (String uid : uids) {
-                DeleteRequestBuilder deleteRequestBuilder =
-                        client.prepareDelete(
-                                String.valueOf("liferay_" + searchContext.getCompanyId()),
-                                "documents", uid);
+            	  DeleteRequestBuilder deleteRequestBuilder =
+                          client.prepareDelete(
+                                  ES_INDEX_NAME,
+                                  "documents", uid);
 
                 bulkRequestBuilder.add(deleteRequestBuilder);
             }
@@ -171,7 +174,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
             DeleteByQueryRequestBuilder deleteByQueryRequestBuilder =
                     client.prepareDeleteByQuery(
-                            String.valueOf("liferay_" + searchContext.getCompanyId()));
+                            ES_INDEX_NAME);
 
             BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
 
@@ -379,7 +382,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
 
         Client client = getClient();
         IndexRequestBuilder indexRequestBuilder = client.prepareIndex(
-                String.valueOf("liferay_" + searchContext.getCompanyId()), "documents").setId(document.getUID());
+                ES_INDEX_NAME, "documents").setId(document.getUID());
 
 
         String elasticSearchDocument = getElasticsearchDocument(document);
