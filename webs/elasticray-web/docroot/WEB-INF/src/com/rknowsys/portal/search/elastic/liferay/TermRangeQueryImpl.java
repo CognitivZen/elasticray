@@ -35,7 +35,7 @@ public class TermRangeQueryImpl extends QueryImpl implements TermRangeQuery {
         } else {
             _rangeQueryBuilder = _rangeQueryBuilder.gt(upperTerm.toLowerCase());
         }
-        QueryParser
+        
     }
 
     @Override

@@ -77,7 +77,7 @@ public class ClientFactoryImpl implements ClientFactory {
         Settings settings = ImmutableSettings.settingsBuilder().classLoader(ClientFactoryImpl.class.getClassLoader()).
                 put(properties).build();
 
-        client = new TransportClient(settings).addTransportAddresses(tas);
+        client = new TransportClient(settings, false).addTransportAddresses(tas);
 
         GetIndexTemplatesResponse gitr = client.admin().indices().prepareGetTemplates(Liferay_Template + "*").execute().actionGet();
         boolean cont = false;
@@ -121,7 +121,7 @@ public class ClientFactoryImpl implements ClientFactory {
                 }
                 client.admin().indices().preparePutTemplate(Liferay_Template + "_" + newVersion).setSource(sb.toString()).execute().actionGet();
 
-                client.admin().indices().prepareDelete("liferay_*").execute().actionGet();
+                //client.admin().indices().prepareDelete("liferay_*").execute().actionGet();
 
                 _log.warn("Please reIndex all search indices in server administration");
             }
