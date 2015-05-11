@@ -3,6 +3,7 @@
  *
  * $Id$
  */
+
 package com.rknowsys.portal.search.elastic.liferay;
 
 import com.liferay.portal.kernel.search.TermRangeQuery;
@@ -17,6 +18,6 @@ public class TermRangeQueryFactoryImpl implements TermRangeQueryFactory {
 
     @Override
     public TermRangeQuery create(String field, String lowerTerm, String upperTerm, boolean includesLower, boolean includesUpper) {
-        return new TermRangeQueryImpl(field,lowerTerm,upperTerm,includesLower,includesUpper);
+        return new TermRangeQueryImpl(field, lowerTerm, upperTerm, includesLower, includesUpper);
     }
 }

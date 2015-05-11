@@ -3,6 +3,7 @@
  *
  * $Id$
  */
+
 package com.rknowsys.portal.search.elastic.liferay;
 
 import com.liferay.portal.kernel.search.TermQuery;
@@ -17,7 +18,7 @@ public class TermQueryFactoryImpl implements TermQueryFactory {
 
     @Override
     public TermQuery create(String field, long value) {
-        return new TermQueryImpl(field,value);
+        return new TermQueryImpl(field, value);
     }
 
     @Override

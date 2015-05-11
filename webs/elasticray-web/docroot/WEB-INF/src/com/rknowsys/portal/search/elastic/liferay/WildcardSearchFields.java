@@ -3,6 +3,7 @@
  *
  * $Id$
  */
+
 package com.rknowsys.portal.search.elastic.liferay;
 
 import java.util.regex.Pattern;
@@ -19,7 +20,7 @@ public class WildcardSearchFields {
     }
 
     public boolean isWildcardField(String fieldName) {
-        if (_fieldPatterns !=null) {
+        if (_fieldPatterns != null) {
             for (String pattern : _fieldPatterns) {
                 if (Pattern.matches(pattern, fieldName)) {
                     return true;

@@ -3,6 +3,7 @@
  *
  * $Id$
  */
+
 package com.rknowsys.portal.search.elastic.liferay;
 
 import com.liferay.portal.kernel.search.QueryTerm;

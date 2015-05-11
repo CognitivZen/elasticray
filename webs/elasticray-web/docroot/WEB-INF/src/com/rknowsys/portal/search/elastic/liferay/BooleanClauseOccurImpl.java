@@ -3,6 +3,7 @@
  *
  * $Id$
  */
+
 package com.rknowsys.portal.search.elastic.liferay;
 
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
@@ -28,14 +29,13 @@ public class BooleanClauseOccurImpl implements BooleanClauseOccur {
             return false;
         }
 
-        BooleanClauseOccur booleanClauseOccur = (BooleanClauseOccur)obj;
+        BooleanClauseOccur booleanClauseOccur = (BooleanClauseOccur) obj;
 
         String name = booleanClauseOccur.getName();
 
         if (_name.equals(name)) {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }

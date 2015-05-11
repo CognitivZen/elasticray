@@ -3,10 +3,12 @@
  *
  * $Id$
  */
+
 package com.rknowsys.portal.search.elastic.liferay;
 
-import com.liferay.portal.kernel.search.Query;
 import org.elasticsearch.index.query.QueryBuilder;
+
+import com.liferay.portal.kernel.search.Query;
 
 /**
  * //TODO Comment goes here

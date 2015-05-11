@@ -3,13 +3,14 @@
  *
  * $Id$
  */
+
 package com.rknowsys.portal.search.elastic.liferay;
 
-import com.liferay.portal.kernel.search.QueryConfig;
-import com.liferay.portal.kernel.search.QueryTerm;
-import com.liferay.portal.kernel.search.TermQuery;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
+
+import com.liferay.portal.kernel.search.QueryTerm;
+import com.liferay.portal.kernel.search.TermQuery;
 
 /**
  * //TODO Comment goes here
@@ -20,13 +21,13 @@ public class TermQueryImpl extends QueryImpl implements TermQuery {
 
 
     public TermQueryImpl(String field, String value) {
-        _queryTerm = new QueryTermImpl(field,value);
-        _termQueryBuilder = QueryBuilders.termQuery(field,value.toLowerCase());
+        _queryTerm = new QueryTermImpl(field, value);
+        _termQueryBuilder = QueryBuilders.termQuery(field, value.toLowerCase());
     }
 
     public TermQueryImpl(String field, long value) {
-        _queryTerm = new QueryTermImpl(field,Long.toString(value));
-        _termQueryBuilder = QueryBuilders.termQuery(field,value);
+        _queryTerm = new QueryTermImpl(field, Long.toString(value));
+        _termQueryBuilder = QueryBuilders.termQuery(field, value);
     }
 
     @Override
@@ -40,8 +41,6 @@ public class TermQueryImpl extends QueryImpl implements TermQuery {
     }
 
 
-
-    private QueryTerm _queryTerm;
+    private QueryTerm        _queryTerm;
     private TermQueryBuilder _termQueryBuilder;
-    private QueryConfig _queryConfig;
 }
