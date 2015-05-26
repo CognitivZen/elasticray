@@ -25,5 +25,5 @@ http://www.elasticsearch.org/download/
 https://github.com/R-Knowsys/elasticray/wiki
 
 ### Development Status
-Development is complete and v1.2 is released. [Download Here](https://github.com/R-Knowsys/elasticray/releases/download/v1.0/elasticsearch-web-1.0.0.0.war) It is been submitted to the Liferay Marketplace.
+Development is complete and v1.3 is released. [Download Here](https://github.com/R-Knowsys/elasticray/releases/download/v1.3/elasticray-web-1.3.0.0.war) It is been submitted to the Liferay Marketplace.
 
