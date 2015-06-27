@@ -4,6 +4,8 @@
 *.war
 *.ear
 
+build.*.properties
+
 hs_err_pid*
 *~
 *.lock
