@@ -7,6 +7,7 @@
     <info module="elastic-web" organisation="com.rknowsys"/>
     <configurations defaultconfmapping="default"/>
     <dependencies>
-        <dependency org="org.elasticsearch" name="elasticsearch" rev="1.4.0"/>
+        <dependency org="org.elasticsearch" name="elasticsearch" rev="2.3.1"/>
+        <dependency org="org.elasticsearch.plugin" name="delete-by-query" rev="2.3.1"/>
     </dependencies>
 </ivy-module>

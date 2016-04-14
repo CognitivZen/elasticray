@@ -15,29 +15,30 @@
  *******************************************************************************/
 package com.rknowsys.portal.search.elastic.client;
 
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.PropsUtil;
-
-import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.client.transport.TransportClient;
-import org.elasticsearch.cluster.metadata.IndexTemplateMetaData;
-import org.elasticsearch.common.settings.ImmutableSettings;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.common.transport.TransportAddress;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+
+import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.cluster.metadata.IndexTemplateMetaData;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.common.transport.TransportAddress;
+import org.elasticsearch.plugin.deletebyquery.DeleteByQueryPlugin;
+
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PropsUtil;
 
 /**
  * //TODO Comment goes here
@@ -69,15 +70,19 @@ public class ClientFactoryImpl implements ClientFactory {
         
         List<TransportAddress> transportAddresses = new ArrayList<TransportAddress>();
         for (String server : servers) {
-            TransportAddress ta = new InetSocketTransportAddress(server, port);
+        	InetSocketAddress inetSocketAddress = new InetSocketAddress(server, port);
+            TransportAddress ta = new InetSocketTransportAddress(inetSocketAddress);
             transportAddresses.add(ta);
         }
         TransportAddress[] tas = transportAddresses.toArray(new TransportAddress[transportAddresses.size()]);
 
-        Settings settings = ImmutableSettings.settingsBuilder().classLoader(ClientFactoryImpl.class.getClassLoader()).
-                put(properties).build();
+        // TODO Validate this code change
+        //Settings settings = ImmutableSettings.settingsBuilder().classLoader(ClientFactoryImpl.class.getClassLoader()).
+        //        put(properties).build();
+        Settings settings = Settings.settingsBuilder().put(properties).build();
 
-        client = new TransportClient(settings, false).addTransportAddresses(tas);
+        
+        client = TransportClient.builder().settings(settings).addPlugin(DeleteByQueryPlugin.class).build().addTransportAddresses(tas);
 
         GetIndexTemplatesResponse gitr = client.admin().indices().prepareGetTemplates(Liferay_Template + "*").execute().actionGet();
         boolean cont = false;

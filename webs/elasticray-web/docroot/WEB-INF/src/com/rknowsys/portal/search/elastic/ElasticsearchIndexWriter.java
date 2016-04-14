@@ -16,42 +16,36 @@
 package com.rknowsys.portal.search.elastic;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Future;
-
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
 
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
 import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.deletebyquery.DeleteByQueryAction;
 import org.elasticsearch.action.deletebyquery.DeleteByQueryRequestBuilder;
 import org.elasticsearch.action.deletebyquery.DeleteByQueryResponse;
 import org.elasticsearch.action.index.IndexRequestBuilder;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.action.update.UpdateRequestBuilder;
-import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.index.VersionType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentImpl;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.IndexWriter;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.rknowsys.portal.search.elastic.client.ClientFactory;
 import com.rknowsys.portal.search.elastic.util.Utilities;
@@ -173,9 +167,9 @@ public class ElasticsearchIndexWriter implements IndexWriter {
         try {
             Client client = getClient();
 
-            DeleteByQueryRequestBuilder deleteByQueryRequestBuilder =
-                    client.prepareDeleteByQuery(
-                            Utilities.getIndexName(searchContext));
+            DeleteByQueryRequestBuilder deleteByQueryRequestBuilder = new DeleteByQueryRequestBuilder(client, DeleteByQueryAction.INSTANCE);
+            
+            deleteByQueryRequestBuilder.setIndices(Utilities.getIndexName(searchContext));
 
             BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
 
@@ -187,7 +181,7 @@ public class ElasticsearchIndexWriter implements IndexWriter {
             Future<DeleteByQueryResponse> future =
                     deleteByQueryRequestBuilder.execute();
 
-            DeleteByQueryResponse deleteByQueryResponse = future.get();
+            future.get();
 
 
         } catch (Exception e) {

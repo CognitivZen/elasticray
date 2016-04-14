@@ -15,19 +15,14 @@
  *******************************************************************************/
 package com.rknowsys.portal.search.elastic;
 
-import com.liferay.portal.kernel.dao.orm.QueryUtil;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.search.*;
-import com.liferay.portal.kernel.search.facet.Facet;
-import com.liferay.portal.kernel.search.facet.MultiValueFacet;
-import com.liferay.portal.kernel.search.facet.RangeFacet;
-import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
-import com.liferay.portal.kernel.util.*;
-import com.rknowsys.portal.search.elastic.client.ClientFactory;
-import com.rknowsys.portal.search.elastic.facet.ElasticsearchFacetFieldCollector;
-import com.rknowsys.portal.search.elastic.facet.LiferayFacetParser;
-import com.rknowsys.portal.search.elastic.util.Utilities;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.util.Version;
 import org.elasticsearch.action.ActionFuture;
@@ -41,16 +36,47 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.facet.FacetBuilder;
-import org.elasticsearch.search.facet.Facets;
+import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.highlight.HighlightField;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.search.Document;
+import com.liferay.portal.kernel.search.DocumentImpl;
+import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.Hits;
+import com.liferay.portal.kernel.search.HitsImpl;
+import com.liferay.portal.kernel.search.IndexSearcher;
+import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.search.Query;
+import com.liferay.portal.kernel.search.QueryConfig;
+import com.liferay.portal.kernel.search.SearchContext;
+import com.liferay.portal.kernel.search.SearchEngineUtil;
+import com.liferay.portal.kernel.search.SearchException;
+import com.liferay.portal.kernel.search.SearchPermissionChecker;
+import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.search.facet.Facet;
+import com.liferay.portal.kernel.search.facet.MultiValueFacet;
+import com.liferay.portal.kernel.search.facet.RangeFacet;
+import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.rknowsys.portal.search.elastic.client.ClientFactory;
+import com.rknowsys.portal.search.elastic.facet.ElasticsearchFacetFieldCollector;
+import com.rknowsys.portal.search.elastic.facet.LiferayFacetParser;
+import com.rknowsys.portal.search.elastic.util.Utilities;
 
 public class ElasticsearchIndexSearcher implements IndexSearcher {
 
@@ -127,7 +153,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
 
         //if (queryBuilder == null) {
             String q=applyCustomESRules(query.toString());
-            QueryBuilder queryBuilder = QueryBuilders.queryString(q);
+            QueryBuilder queryBuilder = QueryBuilders.queryStringQuery(q);
         //}
 
         searchRequestBuilder.setQuery(queryBuilder);
@@ -216,7 +242,7 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
             SearchRequestBuilder searchRequestBuilder = client.prepareSearch(Utilities.getIndexName(companyId));
             String q=applyCustomESRules(query.toString());
 
-            QueryBuilder queryBuilder = QueryBuilders.queryString(q);
+            QueryBuilder queryBuilder = QueryBuilders.queryStringQuery(q);
 
             searchRequestBuilder.setQuery(queryBuilder);
 
@@ -427,10 +453,10 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
                 continue;
             }
 
-            Facets facets = searchResponse.getFacets();
+            Aggregations facets = searchResponse.getAggregations();
 
-            org.elasticsearch.search.facet.Facet elasticsearchFacet =
-                    facets.facet(facet.getFieldName());
+            Aggregation elasticsearchFacet =
+                    facets.get(facet.getFieldName());
 
 
             FacetCollector facetCollector =
@@ -444,14 +470,14 @@ public class ElasticsearchIndexSearcher implements IndexSearcher {
     private void addFacetCollectorsToSearch(SearchContext searchContext, SearchRequestBuilder searchRequestBuilder) {
         Map<String, Facet> facets = searchContext.getFacets();
         for (Facet facet : facets.values()) {
-            FacetBuilder facetBuilder = null;
+        	AggregationBuilder facetBuilder = null;
             if (facet instanceof MultiValueFacet) {
                 facetBuilder = LiferayFacetParser.getFacetBuilder((MultiValueFacet) facet);
             } else if (facet instanceof RangeFacet) {
                 facetBuilder = LiferayFacetParser.getFacetBuilder((RangeFacet) facet);
             }
             if (facetBuilder != null) {
-                searchRequestBuilder.addFacet(facetBuilder);
+                searchRequestBuilder.addAggregation(facetBuilder);
             }
         }
 
