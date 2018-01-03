@@ -25,18 +25,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.elasticsearch.search.facet.Facet;
-import org.elasticsearch.search.facet.range.RangeFacet;
-import org.elasticsearch.search.facet.terms.TermsFacet;
+import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.bucket.range.Range;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 
 public class ElasticsearchFacetFieldCollector implements FacetCollector {
 
-	public ElasticsearchFacetFieldCollector(Facet facet) {
-		if (facet instanceof RangeFacet) {
-			initialize((RangeFacet)facet);
+	public ElasticsearchFacetFieldCollector(Aggregation facet) {
+		if (facet instanceof Range) {
+			initialize((Range)facet);
 		}
 		else {
-			initialize((TermsFacet)facet);
+			initialize((Terms)facet);
 		}
 	}
 
@@ -47,7 +47,7 @@ public class ElasticsearchFacetFieldCollector implements FacetCollector {
 
 	@Override
 	public TermCollector getTermCollector(String term) {
-		int count = 0;
+		long count = 0;
 
 		if (_counts.containsKey(term)) {
 			count = _counts.get(term);
@@ -64,7 +64,7 @@ public class ElasticsearchFacetFieldCollector implements FacetCollector {
 
 		List<TermCollector> termCollectors = new ArrayList<TermCollector>();
 
-		for (Map.Entry<String, Integer> entry : _counts.entrySet()) {
+		for (Map.Entry<String, Long> entry : _counts.entrySet()) {
 			TermCollector termCollector = new ElasticTermCollector(
                 entry.getValue(), entry.getKey());
 
@@ -76,10 +76,10 @@ public class ElasticsearchFacetFieldCollector implements FacetCollector {
 		return _termCollectors;
 	}
 
-	protected void initialize(RangeFacet rangeFacet) {
+	protected void initialize(Range rangeFacet) {
 		_facet = rangeFacet;
 
-		for (RangeFacet.Entry entry : rangeFacet.getEntries()) {
+		for (Range.Bucket entry : rangeFacet.getBuckets()) {
 			StringBundler sb = new StringBundler();
 
 			sb.append("{");
@@ -88,22 +88,22 @@ public class ElasticsearchFacetFieldCollector implements FacetCollector {
 			sb.append(entry.getToAsString());
 			sb.append("}");
 
-			_counts.put(sb.toString(), (int)entry.getCount());
+			_counts.put(sb.toString(), entry.getDocCount());
 		}
 	}
 
-	protected void initialize(TermsFacet termsFacet) {
+	protected void initialize(Terms termsFacet) {
 		_facet = termsFacet;
 
-		for (TermsFacet.Entry entry : termsFacet.getEntries()) {
-			_counts.put(entry.getTerm().string(), entry.getCount());
+		for (Terms.Bucket entry : termsFacet.getBuckets()) {
+			_counts.put(entry.getKeyAsString(), entry.getDocCount());
 		}
 	}
 
 
-	private Map<String, Integer> _counts =
-		new ConcurrentHashMap<String, Integer>();
-	private Facet _facet;
+	private Map<String, Long> _counts =
+		new ConcurrentHashMap<String, Long>();
+	private Aggregation _facet;
 	private List<TermCollector> _termCollectors;
 
 }

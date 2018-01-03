@@ -23,17 +23,17 @@ import com.liferay.portal.kernel.search.facet.collector.TermCollector;
 public class ElasticTermCollector implements TermCollector {
 
     public static final String svnRevision = "$Id$";
-    private final int _frequency;
+    private final long _frequency;
     private final String _term;
 
-    public ElasticTermCollector(int frequency, String term) {
+    public ElasticTermCollector(long frequency, String term) {
         _frequency = frequency;
         _term = term;
     }
 
     @Override
     public int getFrequency() {
-        return _frequency;
+        return (int)_frequency;
     }
 
     @Override
